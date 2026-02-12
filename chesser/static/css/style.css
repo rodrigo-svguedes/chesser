@@ -1,0 +1,68 @@
+/* Configurações gerais */
+:root{
+    --square-size: 90px;     /* tamanho do quadrado (aumentado) */
+    --board-size: calc(var(--square-size) * 8);
+    --light: #f0d9b5;        /* cor clara (lichess-like) */
+    --dark:  #b58863;        /* cor escura */
+    --accent: rgba(80, 160, 255, 0.25);
+    --board-bg: #2a2a2a;
+}
+
+body, html {
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    box-sizing: border-box;
+    height: 100%;
+}
+
+.container {
+    background: var(--light);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    gap: 20px;
+}
+
+.board {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    background: var(--board-bg);
+    padding: 12px;
+    border-radius: 5px;
+    height: var(--board-size);
+    width: var(--board-size);
+    justify-content: center;
+    align-items: center;
+}
+
+/* As 64 casas */
+.square{
+    width: var(--square-size);
+    height: var(--square-size);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size: calc(var(--square-size) * 0.8);
+    line-height: 1;
+    cursor: default;
+    position: relative;
+    transition: box-shadow .12s ease, outline .12s ease;
+}
+
+/* Cores claro/escuro */
+.square.light{ background: var(--light); }
+.square.dark{ background: var(--dark); }
+
+/* Destaque de casa (hover) */
+.square:hover::after{
+    background: var(--accent);
+    mix-blend-mode: overlay;
+}
+
+.square img {
+    width: 100%;
+    height: auto;
+}
+

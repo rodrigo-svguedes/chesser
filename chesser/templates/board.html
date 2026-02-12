@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="board">
+	{% for i in range(8) %}
+		{% for j in range(8) %}
+			<div id="square-{{ i }}-{{ j }}" class="square {% if (i + j) % 2 == 0 %}light{% else %}dark{% endif %}">
+				{% if board %}
+				{% set piece = board.piece_at((7 - i) * 8 + j) %}
+				{% if piece %}
+				<img id="piece-{{ i }}-{{ j }}" src="/static/images/{{ piece.lower() }}.svg" draggable="true" alt="{{ piece }}">
+				{% endif %}
+				{% endif %}	
+			</div>
+		{% endfor %}
+	{% endfor %}
+</div>
+
+
+<script>
+	const svgImg = document.getElementsByTagName('img');
+	for (let i = 0; i < svgImg.length; i++) {
+		// Evento quando o arraste começa
+		svgImg[i].addEventListener('dragstart', (e) => {
+			console.log('Drag started');
+			e.dataTransfer.setData('text/plain', e.target.src);
+			e.target.style.opacity = '0.5';
+		});
+		svgImg[i].addEventListener('dragend', (e) => {
+			console.log('Drag ended');
+			e.target.remove();
+		});
+	}
+	const board = document.getElementsByClassName('board')[0];
+
+	board.addEventListener('dragover', (e) => {
+		e.preventDefault();
+		console.log('Drag over');
+	});
+
+	board.addEventListener('drop', (e) => {
+		console.log('Drop event');
+		e.preventDefault();
+		const src = e.dataTransfer.getData('text/plain');
+		const targetSquare = e.target.closest('.square');
+		if (targetSquare && targetSquare.children.length === 0) {
+			const img = document.createElement('img');
+			img.src = src;
+			img.className = 'piece';
+			img.draggable = true;
+			img.addEventListener('dragstart', (e) => {
+				console.log('Drag started');
+				e.dataTransfer.setData('text/plain', e.target.src);
+				e.target.style.opacity = '0.';
+			});
+			targetSquare.appendChild(img);
+		}
+	});
+</script>
+
+{% endblock %}
