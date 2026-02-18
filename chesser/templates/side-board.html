@@ -1,0 +1,39 @@
+{% block side_board %}
+    <div class="side_board">
+		<div class="top-bar">
+            <div class="tab">
+                <button class="tablinks active" onclick="openCity(event, 'ImportPGN')">Import PGN</button>
+                <button class="tablinks" onclick="openCity(event, 'ImportChessCom')">Import from Chess.com</button>
+            </div>
+            <div id="ImportPGN" class="tabcontent" style="display: block;">
+                <textarea name="PGN" id="pgn_ta"></textarea>
+                <button id="importPGNBtn" class="search-btn">Import PGN</button>
+            </div>
+            <div id="ImportChessCom" class="tabcontent">
+                <div>
+                    <label for="chess_com_username">Username</label>
+                    <input type="text" id="chess_com_username">
+                    <button class="search-btn">Seach</button>
+                </div>
+            </div>
+        </div>
+		<div class="content"></div>
+		<div class="controls">
+			<button class="control-btn" id="btn-gotostart">
+				<img src="/static/images/double-arrow-left.svg" alt="Start">
+			</button>
+			<button class="control-btn" id="btn-previous">
+				<img src="/static/images/previous.svg" alt="Previous">
+			</button>
+			<button class="control-btn" id="btn-play">
+				<img src="/static/images/play.svg" alt="Play/Stop">
+			</button>
+			<button class="control-btn" id="btn-next">
+				<img src="/static/images/next.svg" alt="Next">
+			</button>
+			<button class="control-btn" id="btn-gotoend">
+				<img src="/static/images/double-arrow-right.svg" alt="End">
+			</button>
+		</div>
+    </div>
+{% endblock %}

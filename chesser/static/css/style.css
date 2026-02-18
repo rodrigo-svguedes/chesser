@@ -1,11 +1,20 @@
 /* Configurações gerais */
-:root{
-    --square-size: 90px;     /* tamanho do quadrado (aumentado) */
-    --board-size: calc(var(--square-size) * 8);
-    --light: #f0d9b5;        /* cor clara (lichess-like) */
-    --dark:  #b58863;        /* cor escura */
+:root {
+    --board-width: 40%;
+    --board-height: 90%;
+    --evaluation-bar-width: 1.5rem;
+    --chess-board-width: 35vw;
+    --square-size: 100%;
+    --side-board-width: 30%;
+    --side-board-height: 90%;
+    --margin-left-board: 1rem;
+    --light: #f0d9b5;
+    --dark:  #b58863;
     --accent: rgba(80, 160, 255, 0.25);
-    --board-bg: #2a2a2a;
+    --board-bg-no-opacity: rgba(49, 46, 43);
+    --board-bg: rgba(49, 46, 43, 0.5);
+    --font-color-1: white;
+    --font-color-2: aliceblue;
 }
 
 body, html {
@@ -14,48 +23,108 @@ body, html {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     box-sizing: border-box;
     height: 100%;
+    background-image: url("../images/background_img.png");
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
 }
 
 .container {
-    background: var(--light);
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 100vh;
-    gap: 20px;
+    height: 100%;
+    gap: 10px;
 }
 
-.board {
+.board-main {
+    display: flex;
+    flex-direction: column;
+    background: var(--board-bg);
+    border-radius: 4px;
+    height: var(--board-height);
+    width: var(--board-width);
+    justify-content: center;
+}
+
+.board-player {
+    position: relative;
+    height: 5%;
+    width: 100%;
+    left: 0;
+    font-size: 11pt;
+    color: var(--font-color-1);
+    font-weight: bold;
+}
+
+.board-player.top span {
+    position: absolute;
+    bottom: 3px;
+    left: calc(var(--evaluation-bar-width) + var(--margin-left-board) * 2);
+}
+
+.board-player.bottom span {
+    position: absolute;
+    top: 3px;
+    left: calc(var(--evaluation-bar-width) + var(--margin-left-board) * 2);
+}
+
+.board-middle {
+    display: flex;
+    align-items: flex-start; 
+}
+
+.board-evaluation-bar {
+    display: flex;
+    flex-direction: column;
+    height: var(--chess-board-width);
+    width: var(--evaluation-bar-width);
+    margin-left: var(--margin-left-board);
+}
+
+.white-bar {
+    position: relative;
+    background-color: white;
+    height: 50%;
+    width: var(--evaluation-bar-width);
+    border-top-left-radius: 3px;
+    border-top-right-radius: 3px;
+}
+
+.black-bar {
+    position: relative;
+    background-color: var(--board-bg-no-opacity);
+    height: 50%;
+    width: var(--evaluation-bar-width);
+    border-bottom-left-radius: 3px;
+    border-bottom-right-radius: 3px;
+}
+
+.board-chessboard {
     display: grid;
     grid-template-columns: repeat(8, 1fr);
-    background: var(--board-bg);
-    padding: 12px;
-    border-radius: 5px;
-    height: var(--board-size);
-    width: var(--board-size);
-    justify-content: center;
-    align-items: center;
+    height: var(--chess-board-width);
+    width: auto;
+    aspect-ratio: 1 / 1;
+    margin-left: var(--margin-left-board);
 }
 
-/* As 64 casas */
-.square{
+.square {
     width: var(--square-size);
     height: var(--square-size);
     display:flex;
     align-items:center;
     justify-content:center;
-    font-size: calc(var(--square-size) * 0.8);
     line-height: 1;
     cursor: default;
     position: relative;
     transition: box-shadow .12s ease, outline .12s ease;
 }
 
-/* Cores claro/escuro */
 .square.light{ background: var(--light); }
 .square.dark{ background: var(--dark); }
 
-/* Destaque de casa (hover) */
 .square:hover::after{
     background: var(--accent);
     mix-blend-mode: overlay;
@@ -64,5 +133,181 @@ body, html {
 .square img {
     width: 100%;
     height: auto;
+    position: absolute;
 }
 
+.coord {
+    position: absolute;
+    font-size: 14px;
+    font-weight: bold;
+    padding: 2px 4px;
+    border-radius: 2px;
+}
+
+.coord.top-left {
+    top: 2px;
+    left: 2px;
+}
+
+.coord.bottom-right {
+    bottom: 2px;
+    right: 2px;
+}
+
+.coord_dark { color: var(--dark) }
+.coord_light { color: var(--light) }
+
+.eval-num {
+    position: absolute;
+    font-size: 10px;
+    font-weight: bold;
+    padding: 2px 2px;
+    border-radius: 2px;
+}
+
+.eval-num.top { top: 2px }
+.eval-num.bottom { bottom: 2px}
+.eval-num.white { color: white }
+.eval-num.dark { color: black }
+
+.side_board {
+    display: flex;
+    flex-direction: column;
+    width: var(--side-board-width);
+    height: var(--side-board-height);
+    background: var(--board-bg);
+    border-radius: 4px;
+}
+
+.content {
+    height: 65%;
+    width: 100%;
+}
+
+.controls {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-around;
+    align-items: center;
+    height: 10%;
+    width: 100%;
+}
+
+.control-btn {
+    width: 18%;
+    height: 60%;
+    background-color: var(--board-bg);
+    border-radius: 4px;
+    font-size: 18pt;
+    border: none;
+    color: var(--font-color-1);
+    outline: none;
+}
+
+.control-btn:hover {
+    cursor: pointer;
+    background-color: var(--board-bg-no-opacity);
+}
+
+.control-btn img {
+    display: relative;
+    height: 60%;
+    width: auto;
+}
+
+.top-bar {
+    display: flex;
+    flex-direction: column;
+    height: 25%;
+    width: 100%;
+    border-radius: 4px;
+}
+
+.tab {
+    overflow: hidden;
+    display: flex;
+    justify-content: space-around;
+    height: 30%;
+}
+
+.tab button {
+    background-color: var(--board-bg);
+    float: left;
+    border: none;
+    outline: none;
+    cursor: pointer;
+    transition: 0.3s;
+    padding: 12px 10px;
+    color: var(--font-color-1);
+    font-size: medium;
+    width: 49%;
+    border-radius: 4px;
+}
+
+.tab button:hover {
+    background-color: var(--board-bg-no-opacity);
+}
+
+.tab button.active {
+    background-color: #ccc;
+    color: black;
+}
+
+.tabcontent {
+    display: none;
+    padding: 6px 12px;
+    border-top: none;
+    background-color: var(--board-bg);
+    height: 70%;
+}
+
+.tabcontent textarea {
+    background-color: transparent;
+    border-radius: 4px;
+    border: var(--font-color-2) solid 1px;
+    color: var(--font-color-2);
+    outline: none;
+    width: 100%;
+    height: 50%;
+}
+
+.tabcontent div {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.tabcontent input {
+    background-color: transparent;
+    border-radius: 4px;
+    border: var(--font-color-2) solid 1px;
+    outline: none;
+    width: 60%;
+    height: 30%;
+    color: var(--font-color-2);
+    font-size: 12pt;
+    padding-left: .75rem;
+}
+
+.tabcontent label {
+    padding-right: 0.5rem;
+    color: var(--font-color-2);
+}
+
+.search-btn {
+    width: 35%;
+    height: 3rem;
+    background-color: var(--board-bg);
+    border-radius: 4px;
+    font-size: 14pt;
+    border: none;
+    color: var(--font-color-1);
+    outline: none;
+    margin-top: .5rem;
+}
+
+.search-btn:hover {
+    cursor: pointer;
+    background-color: var(--board-bg-no-opacity);
+    border: var(--font-color-2) solid 1px;
+}
