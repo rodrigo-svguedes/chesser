@@ -2,12 +2,12 @@
 :root {
     --board-width: 40%;
     --board-height: 90%;
-    --evaluation-bar-width: 1.5rem;
+    --evaluation-bar-width: 1.5vw;
     --chess-board-width: 35vw;
     --square-size: 100%;
     --side-board-width: 30%;
     --side-board-height: 90%;
-    --margin-left-board: 1rem;
+    --margin-left-board: .75vw;
     --light: #f0d9b5;
     --dark:  #b58863;
     --accent: rgba(80, 160, 255, 0.25);
@@ -36,6 +36,13 @@ body, html {
     align-items: center;
     height: 100%;
     gap: 10px;
+}
+
+@media (max-width: 1250px) {
+    .container {
+        display: flex;
+        flex-direction: column;
+    }
 }
 
 .board-main {
@@ -159,7 +166,7 @@ body, html {
 
 .eval-num {
     position: absolute;
-    font-size: 10px;
+    font-size: .65vw;
     font-weight: bold;
     padding: 2px 2px;
     border-radius: 2px;

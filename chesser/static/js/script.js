@@ -1,37 +1,19 @@
 
+const API_BASE = ''
+const STARTING_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR'
+
 /*
  1: go foward, 
  0: go backwards, 
- -1: go to the beginning, 
+-1: go to the beginning, 
  2: go the end;
  */
-const makeGameStream = gameId => {
-    const API_BASE = ''
+const makeGameStream = async (squares, gameMoveAnalysis) => {
 
-    let squares = {}
-    for (const element of document.getElementsByClassName('square')) 
-        squares[element.id] = element
+    let pieces = await fetch(`${API_BASE}/board/pieces`)
+                        .then(response => response.json())
 
-    let pieces = null
-    fetch(`${API_BASE}/board/pieces`)
-        .then(response => response.json())
-        .then(data => pieces = data)
-
-    fetch(`${API_BASE}/board/game/${gameId}`)
-        .then(response => response.json())
-        .then(data => {
-            const blackPlayerName = document.createElement('span')
-            blackPlayerName.innerText = data['black_player']
-
-            document.getElementById('bp-name-1').appendChild(blackPlayerName)
-
-            const whitePlayerName = document.createElement('span')
-            whitePlayerName.innerText = data['white_player']
-
-            document.getElementById('bp-name-2').appendChild(whitePlayerName)
-        })
-    
-    let finalIndex = -1
+    let finalIndex = Object.keys(gameMoveAnalysis).length
     let moveIndex = -1
 
     const isDigit = value => "0123456789".includes(value);
@@ -42,90 +24,149 @@ const makeGameStream = gameId => {
             for (const img of imagens) img.remove()
         })      
 
-    const manageBoardState = streamDirection => {
-        if (streamDirection === 1 && moveIndex < finalIndex-1) { 
-            moveIndex += 1
-            return true
-        } else if (streamDirection === 0 && moveIndex > 0) {
-            moveIndex -= 1
-            return true
-        } else if (streamDirection === -1 && moveIndex != 0) {
-            moveIndex = 0
-            return true
-        } else if (streamDirection === 2 && moveIndex != (finalIndex-1)) {
-            moveIndex = finalIndex-1
-            return true
-        }
-        return false
+    const expandAndReverseFenRanks = fen => {
+        let expandedFen = ''
+        fen.split('/').forEach(element => {
+            Array.from(element).reverse().forEach(chr => {
+                expandedFen += isDigit(chr)? '#'.repeat(parseInt(chr)) : chr
+            })
+            expandedFen += '/'
+        })
+        return expandedFen
     }
 
-    let fenList = null;
+    const createImgPiece = pieceChar => {
+        const piece_img = document.createElement('img');
+        piece_img.src = `/static/images/${pieces[pieceChar]}.svg`
+        piece_img.draggable = true
+        return piece_img
+    }
 
-    const loadPieces = () => {
-        let count = 0
+    const loadPieces = fen => {
         cleanBoard()
-        fenList[moveIndex].split('/').forEach(element => {
+        let count = 63
+        expandAndReverseFenRanks(fen).split('/').forEach(element => {
             Array.from(element).forEach(character => {
-                if (isDigit(character)) {
-                    count += parseInt(character)
-                } else {
-                    const piece_img = document.createElement('img');
-                    piece_img.src = `/static/images/${pieces[character]}.svg`
-                    piece_img.draggable = true
-                    squares[count].appendChild(piece_img)
-                    count++
-                }
+                if (character !== '#') 
+                    squares[count].appendChild(createImgPiece(character))
+                count--
             })
         })
     }
 
-    fetch(`${API_BASE}/board/fen/${gameId}`)
-        .then(response => response.json())
-        .then(data => {
-            fenList = data
-            finalIndex = Object.keys(fenList).length
-            if (manageBoardState(1)) 
-                loadPieces(moveIndex)
-        })
+    const manageBoardState = direction => {
 
-    return (streamDirection) => {
-        if (manageBoardState(streamDirection))
-            loadPieces()
+        if (direction === 1 && moveIndex < finalIndex-1) { 
+            moveIndex += 1
+
+            let fromSquare = gameMoveAnalysis[moveIndex]['from_square']
+            let toSquare = gameMoveAnalysis[moveIndex]['to_square']
+            
+            const imgOrigin = squares[fromSquare].querySelectorAll('img')[0]
+
+            const imgDestiny = squares[toSquare].querySelectorAll('img')
+            if (imgDestiny.length != 0) imgDestiny[0].remove()
+
+            squares[toSquare].appendChild(imgOrigin)
+            
+            if (gameMoveAnalysis[moveIndex]['is_castling']) {
+                if ((toSquare - fromSquare) > 0) {
+                    let rook = squares[fromSquare+3].querySelectorAll('img')[0]
+                    squares[toSquare-1].appendChild(rook)
+                } else {
+                    let rook = squares[fromSquare-4].querySelectorAll('img')[0]
+                    squares[toSquare+1].appendChild(rook)
+                }
+            }
+
+        } else if (direction === 0 && moveIndex >= 0) {
+            
+            let fromSquare = gameMoveAnalysis[moveIndex]['from_square']
+            let toSquare = gameMoveAnalysis[moveIndex]['to_square']
+            
+            squares[fromSquare].appendChild(squares[toSquare].querySelectorAll('img')[0])
+
+            if (gameMoveAnalysis[moveIndex]['is_castling']) {
+                if ((toSquare - fromSquare) > 0) {
+                    let rook = squares[toSquare-1].querySelectorAll('img')[0]
+                    squares[fromSquare+3].appendChild(rook)
+                } else {
+                    let rook = squares[toSquare+1].querySelectorAll('img')[0]
+                    squares[fromSquare-4].appendChild(rook)
+                }
+            }
+            
+            if (moveIndex != 0) {
+                const previousFen = gameMoveAnalysis[moveIndex-1]['fen']
+                const pieceChr = expandAndReverseFenRanks(previousFen).replaceAll('/', '')[63-toSquare]
+                if (pieceChr !== "#") squares[toSquare].appendChild(createImgPiece(pieceChr))
+            }
+            moveIndex -= 1
+
+        } else if (direction === -1 && moveIndex != 0) {
+            moveIndex = -1
+            loadPieces(STARTING_FEN)
+        } else if (direction === 2 && moveIndex != (finalIndex-1)) {
+            moveIndex = finalIndex-1
+            loadPieces(gameMoveAnalysis[moveIndex]['fen'])
+        }
     }
+
+    loadPieces(STARTING_FEN)
+    
+    document.addEventListener('keydown', event => {
+        if (event.key === 'ArrowLeft') {
+            manageBoardState(0);
+        } else if (event.key === 'ArrowRight') {
+            manageBoardState(1);
+        } else if (event.key === 'ArrowUp') {
+            manageBoardState(-1);
+        } else if (event.key === 'ArrowDown') {
+            manageBoardState(2);
+        }
+    });
+
+    document.getElementById('btn-gotostart')
+            .addEventListener("click", () => manageBoardState(-1))
+    document.getElementById('btn-previous')
+            .addEventListener("click", () => manageBoardState(0))
+    document.getElementById('btn-next')
+            .addEventListener("click", () => manageBoardState(1))
+    document.getElementById('btn-gotoend')
+            .addEventListener("click", () => manageBoardState(2))
 }
 
-let gameStream = null;
-
-document.addEventListener('keydown', event => {
-    if (event.key === 'ArrowLeft') {
-        gameStream(0);
-    } else if (event.key === 'ArrowRight') {
-        gameStream(1);
-    } else if (event.key === 'ArrowUp') {
-        gameStream(-1);
-    } else if (event.key === 'ArrowDown') {
-        gameStream(2);
-    }
-});
-
-document.getElementById('btn-gotostart')
-        .addEventListener("click", () => loadChessBoard(-1))
-
-document.getElementById('btn-previous')
-        .addEventListener("click", () => loadChessBoard(0))
-
-document.getElementById('btn-next')
-        .addEventListener("click", () => loadChessBoard(1))
-
-document.getElementById('btn-gotoend')
-        .addEventListener("click", () => loadChessBoard(2))
-
     
-document.getElementById('importPGNBtn')
-        .addEventListener('click', () => gameStream = makeGameStream(0))
+(() => {
+    const text_area = document.getElementById('pgn_ta')
+
+    let squares = {}
+    for (const element of document.getElementsByClassName('square')) 
+        squares[element.id] = element
+
+    const setPlayerName = (elementName, playerName) => {
+        const blackPlayerName = document.createElement('span')
+        blackPlayerName.innerText = playerName
+        document.getElementById(elementName).appendChild(blackPlayerName)
+    }
+
+    return () => document
+        .getElementById('importPGNBtn')
+        .addEventListener('click', () => {
+            fetch(`${API_BASE}/board/pgn/analyse`, {
+                method: 'POST',
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({ pgn_code: text_area.value})})
+            .then(data => data.json())
+            .then(data => {
+                setPlayerName('bp-name-1', data[0]['black_player'])
+                setPlayerName('bp-name-2', data[0]['white_player'])
+                makeGameStream(squares, data[1])
+            })
+    })})()()
 
 
-function openCity(evt, cityName) {
+function openTab(evt, tabName) {
     var i, tabcontent, tablinks;
 
     tabcontent = document.getElementsByClassName("tabcontent");
@@ -138,43 +179,6 @@ function openCity(evt, cityName) {
         tablinks[i].className = tablinks[i].className.replace(" active", "");
     }
 
-    document.getElementById(cityName).style.display = "block";
+    document.getElementById(tabName).style.display = "block";
     evt.currentTarget.className += " active";
-} 
-/*
-const svgImg = document.getElementsByTagName('img');
-
-for (let i = 0; i < svgImg.length; i++) {
-
-    svgImg[i].addEventListener('dragstart', (e) => {
-        e.dataTransfer.setData('svg_piece', e.target.src);
-        e.target.style.opacity = '0.5';
-    });
-
-    svgImg[i].addEventListener('dragend', (e) => {
-        e.target.remove();
-    });
 }
-
-const board = document.getElementsByClassName('board-chessboard')[0];
-
-board.addEventListener('dragover', e => e.preventDefault());
-
-board.addEventListener('drop', (e) => {
-
-    e.preventDefault();
-
-    const src = e.dataTransfer.getData('svg_piece');
-
-    const targetSquare = e.target.closest('.square');
-
-    const img = document.createElement('img');
-    img.src = src;
-    img.className = 'piece';
-    img.draggable = true;
-    img.addEventListener('dragstart', (e) => {
-        e.dataTransfer.setData('svg_piece', e.target.src);
-        e.target.style.opacity = '0.';
-    });
-    targetSquare.appendChild(img);
-});*/
