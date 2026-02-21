@@ -9,20 +9,23 @@
 				<div class="black-bar"><span class="eval-num bottom white">-0.0</span></div>
 			</div>
 			<div class="board-chessboard">
-				{% for i in range(64) %}
-					{% set even = ((i // 8) + (i % 8)) % 2 == 0 %}
-					<div id="{{ i }}" class="square {% if even %}light{% else %}dark{% endif %}">
-						{% if board.ranks[i] %}
-							<span class="coord top-left coord_{% if even %}dark{% else %}light{% endif %}">
-								{{ board.ranks[i] }}
-							</span>
-						{% endif %}
-						{% if board.files[i] %}
-							<span class="coord bottom-right coord_{% if even %}dark{% else %}light{% endif %}">
-								{{ board.files[i] }}
-							</span>
-						{% endif %}
-					</div>
+				{% for i in range(7, -1, -1) %}
+					{% for y in range(8) %}
+						{% set id = i * 8 + y %}
+						{% set even = (i + y) % 2 == 0 %}
+						<div id="{{ id }}" class="square {% if even %}dark{% else %}light{% endif %}">
+							{% if board.ranks[id] %}
+								<span class="coord top-left coord_{% if even %}light{% else %}dark{% endif %}">
+									{{ board.ranks[id] }}
+								</span>
+							{% endif %}
+							{% if board.files[id] %}
+								<span class="coord bottom-right coord_{% if even %}light{% else %}dark{% endif %}">
+									{{ board.files[id] }}
+								</span>
+							{% endif %}
+						</div>
+					{% endfor %}
 				{% endfor %}
 			</div>
 		</div>

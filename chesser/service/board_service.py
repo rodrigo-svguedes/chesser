@@ -1,17 +1,21 @@
 import io
+import math
 
 from collections import namedtuple
 
 import chess
 import chess.pgn
+import chess.engine
 
 
 Board = namedtuple('Board', 'ranks, files')
 
+
 def get_board_coordinates():
-    ranks = {0: '8', 8: '7', 16: '6', 24: '5', 32: '4', 40: '3', 48: '2', 56: '1'}
-    files = {56: 'a', 57: 'b', 58: 'c', 59: 'd', 60: 'e', 61: 'f', 62: 'g', 63: 'h'}
+    ranks = {0: '1', 8: '2', 16: '3', 24: '4', 32: '5', 40: '6', 48: '7', 56: '8'}
+    files = {0: 'a', 1: 'b', 2: 'c', 3: 'd', 4: 'e', 5: 'f', 6: 'g', 7: 'h'}
     return Board(ranks, files)
+
 
 def get_svg_piece_names():
     return {
@@ -29,46 +33,64 @@ def get_svg_piece_names():
         'P': 'pawn-w',
     }
 
-pgn_code = '''
-    [Event "Live Chess"]
-    [Site "Chess.com"]
-    [Date "2026.02.16"]
-    [Round "?"]
-    [White "RandomGuy"]
-    [Black "R0drigoGuedes"]
-    [Result "0-1"]
-    [TimeControl "180"]
-    [WhiteElo "1398"]
-    [BlackElo "1394"]
-    [Termination "R0drigoGuedes venceu por desistência"]
-    [ECO "A40"]
-    [EndTime "16:33:58 GMT+0000"]
-    [Link "https://www.chess.com/game/live/164778245142?move=0"]
 
-    1. d4 e6 2. Bf4 d5 3. e3 c5 4. Nf3 Nf6 5. c3 cxd4 6. exd4 Bd6 7. Bg3 O-O 8. Bd3
-    Nc6 9. Nbd2 b6 10. Qc2 Bb7 11. b4 Ne7 12. Ne5 Ng6 13. a4 Bxe5 14. dxe5 Nd7 15.
-    Nf3 Qc7 16. O-O Rac8 17. Rac1 Qc6 18. b5 Qc7 19. Rfe1 Nc5 20. Bf1 Qd7 21. Nd4
-    Rc7 22. f4 Ne4 23. Rxe4 dxe4 24. Qxe4 Bxe4 0-1'''.replace(4*' ', '')
-    
-#TODO: this function must take from a database or from chess.com
-def get_fen_game(game_id):
-    
+def analyse_game(pgn_code):
+
+    stockfish_path = "/home/rodrigo/Downloads/stockfish/stockfish-ubuntu-x86-64-avx2"
+    engine = chess.engine.SimpleEngine.popen_uci(stockfish_path)
+
     game = chess.pgn.read_game(io.StringIO(pgn_code))
     
     board = game.board()
-    fen_list = {}
+
+    game_data = {
+        'black_player': f"{game.headers['Black']} - {game.headers['BlackElo']}",
+        'white_player': f"{game.headers['White']} - {game.headers['WhiteElo']}"
+    }
+
+    def centipawns_to_bar(cp):
+        cp = max(min(cp, 1000), -1000) 
+        return 1 / (1 + math.exp(-0.004 * cp))
+
+    analyse_data = {}
 
     for index, move in enumerate(game.mainline_moves()):
+        
+        analyse_data[index] = {
+            'move': move.uci(), 
+            'engine_moves': {},
+            'from_square': move.from_square,
+            'to_square': move.to_square,
+            'is_castling': board.is_castling(move)}
+
         board.push(move)
-        fen_list[index] = board.board_fen()
+        analyse_data[index]['fen'] = board.board_fen()
+        info = engine.analyse(board, chess.engine.Limit(depth=10), multipv=3)
 
-    return fen_list
+        for i, entry in enumerate(info):
+            score = entry["score"].white()
+            if score.is_mate():
+                analyse_data[index]['is_mate'] = True
+                analyse_data[index]['mate_in'] = score.mate()
+                if score.mate() > 0:
+                    analyse_data[index]['mate_for'] = 'white'
+                    analyse_data[index]['evaluation'] = "10"
+                    analyse_data[index]['win_advantage'] = "1"
+                elif score.mate() < 0:
+                    analyse_data[index]['mate_for'] = 'black'
+                    analyse_data[index]['evaluation'] = "-10"
+                    analyse_data[index]['win_advantage'] = "0"
+                else:
+                    analyse_data[index]['mated'] = True
+                break
+            else:
+                cp = score.score()
+                prob = centipawns_to_bar(cp)
+                analyse_data[index]['score'] = score.score()           
+                analyse_data[index]['engine_moves'][i] = entry["pv"][0].uci()
+                analyse_data[index]['evaluation'] = f"{cp * 0.004:.2f}"
+                analyse_data[index]['win_advantage'] = f"{prob:.2f}"
 
+    engine.quit()
 
-def get_game_data(game_id):
-    game = chess.pgn.read_game(io.StringIO(pgn_code))
-    game_data = {
-        'black_player': game.headers['Black'],
-        'white_player': game.headers['White']
-    }
-    return game_data
+    return [game_data, analyse_data]
