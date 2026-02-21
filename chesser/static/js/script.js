@@ -59,13 +59,17 @@ const makeGameStream = async (squares, gameMoveAnalysis) => {
         if (direction === 1 && moveIndex < finalIndex-1) { 
             moveIndex += 1
 
-            let fromSquare = gameMoveAnalysis[moveIndex]['from_square']
-            let toSquare = gameMoveAnalysis[moveIndex]['to_square']
+            const fromSquare = gameMoveAnalysis[moveIndex]['from_square']
+            const toSquare = gameMoveAnalysis[moveIndex]['to_square']
             
             const imgOrigin = squares[fromSquare].querySelectorAll('img')[0]
 
             const imgDestiny = squares[toSquare].querySelectorAll('img')
             if (imgDestiny.length != 0) imgDestiny[0].remove()
+
+            const promotion_to = gameMoveAnalysis[moveIndex]['promotion_to']
+            if (promotion_to)
+                imgOrigin.src = `/static/images/${pieces[promotion_to]}.svg`
 
             squares[toSquare].appendChild(imgOrigin)
             
@@ -78,13 +82,19 @@ const makeGameStream = async (squares, gameMoveAnalysis) => {
                     squares[toSquare+1].appendChild(rook)
                 }
             }
-
+            
         } else if (direction === 0 && moveIndex >= 0) {
             
-            let fromSquare = gameMoveAnalysis[moveIndex]['from_square']
-            let toSquare = gameMoveAnalysis[moveIndex]['to_square']
+            const fromSquare = gameMoveAnalysis[moveIndex]['from_square']
+            const toSquare = gameMoveAnalysis[moveIndex]['to_square']
             
-            squares[fromSquare].appendChild(squares[toSquare].querySelectorAll('img')[0])
+            let img = squares[toSquare].querySelectorAll('img')[0]
+
+            const promotion_to = gameMoveAnalysis[moveIndex]['promotion_to']
+            if (promotion_to) 
+                img.src = `/static/images/${pieces[moveIndex % 2 == 0? 'P':'p']}.svg`
+
+            squares[fromSquare].appendChild(img)
 
             if (gameMoveAnalysis[moveIndex]['is_castling']) {
                 if ((toSquare - fromSquare) > 0) {

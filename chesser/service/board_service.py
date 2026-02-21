@@ -64,6 +64,11 @@ def analyse_game(pgn_code):
             'is_castling': board.is_castling(move)}
 
         board.push(move)
+        
+        if move.promotion:
+            piece_symbol = chess.piece_symbol(move.promotion)
+            analyse_data[index]['promotion_to'] = piece_symbol.capitalize() if index % 2 == 0 else piece_symbol
+
         analyse_data[index]['fen'] = board.board_fen()
         info = engine.analyse(board, chess.engine.Limit(depth=10), multipv=3)
 
