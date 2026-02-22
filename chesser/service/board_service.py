@@ -34,9 +34,38 @@ def get_svg_piece_names():
     }
 
 
-def analyse_game(pgn_code):
+def convert_stockfish_centipawns_to_bar_score(score, mate_threshold=10.0):
+    
+    if score.is_mate():
+        mate_in = score.mate()
+        if mate_in > 0:
+            return 319.99 - (abs(mate_in) / 1000) * 0.1
+        else:
+            return -319.99 + (abs(mate_in) / 1000) * 0.1
+    
+    cp_score = score.score()
+    
+    max_score = mate_threshold
+    
+    if abs(cp_score) <= 500:
+        converted = cp_score / 100.0
+    else:
+        sign = 1 if cp_score > 0 else -1
+        abs_score = abs(cp_score)
+        compressed = max_score * (1 - math.exp(-abs_score / 500))
+        converted = sign * compressed
+    
+    return max(min(converted, max_score), -max_score)
 
-    stockfish_path = "/home/rodrigo/Downloads/stockfish/stockfish-ubuntu-x86-64-avx2"
+
+def win_advantage(cp):
+    cp = max(min(cp, 1000), -1000) 
+    return 1 / (1 + math.exp(-0.004 * cp))
+
+
+def analyse_game(stockfish_path, pgn_code):
+
+    #TODO: We need a pool of stockfish's instances
     engine = chess.engine.SimpleEngine.popen_uci(stockfish_path)
 
     game = chess.pgn.read_game(io.StringIO(pgn_code))
@@ -47,10 +76,6 @@ def analyse_game(pgn_code):
         'black_player': f"{game.headers['Black']} - {game.headers['BlackElo']}",
         'white_player': f"{game.headers['White']} - {game.headers['WhiteElo']}"
     }
-
-    def centipawns_to_bar(cp):
-        cp = max(min(cp, 1000), -1000) 
-        return 1 / (1 + math.exp(-0.004 * cp))
 
     analyse_data = {}
 
@@ -70,32 +95,28 @@ def analyse_game(pgn_code):
             analyse_data[index]['promotion_to'] = piece_symbol.capitalize() if index % 2 == 0 else piece_symbol
 
         analyse_data[index]['fen'] = board.board_fen()
+        #TODO: we still need to return the three best moves and their lines.
         info = engine.analyse(board, chess.engine.Limit(depth=10), multipv=3)
 
-        for i, entry in enumerate(info):
-            score = entry["score"].white()
-            if score.is_mate():
-                analyse_data[index]['is_mate'] = True
-                analyse_data[index]['mate_in'] = score.mate()
-                if score.mate() > 0:
-                    analyse_data[index]['mate_for'] = 'white'
-                    analyse_data[index]['evaluation'] = "10"
-                    analyse_data[index]['win_advantage'] = "1"
-                elif score.mate() < 0:
-                    analyse_data[index]['mate_for'] = 'black'
-                    analyse_data[index]['evaluation'] = "-10"
-                    analyse_data[index]['win_advantage'] = "0"
-                else:
-                    analyse_data[index]['mated'] = True
-                break
+        score = info[0]['score'].white()
+        evaluation = convert_stockfish_centipawns_to_bar_score(score)
+        
+        if not score.is_mate():
+            prob = win_advantage(score.score())
+            analyse_data[index]['win_advantage'] = f"{prob:.2f}"
+        else:
+            analyse_data[index]['mate_in'] = score.mate()
+            if score.mate() < 0:
+                analyse_data[index]['win_advantage'] = f"{0:.2f}"
+            elif score.mate() > 0:
+                analyse_data[index]['win_advantage'] = f"{1:.2f}"
+            elif index % 2 == 0:
+                analyse_data[index]['win_advantage'] = f"{1:.2f}"
             else:
-                cp = score.score()
-                prob = centipawns_to_bar(cp)
-                analyse_data[index]['score'] = score.score()           
-                analyse_data[index]['engine_moves'][i] = entry["pv"][0].uci()
-                analyse_data[index]['evaluation'] = f"{cp * 0.004:.2f}"
-                analyse_data[index]['win_advantage'] = f"{prob:.2f}"
+                analyse_data[index]['win_advantage'] = f"{0:.2f}"
 
+        analyse_data[index]['evaluation'] = f"{evaluation:.1f}"
+    
     engine.quit()
 
     return [game_data, analyse_data]

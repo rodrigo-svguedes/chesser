@@ -16,6 +16,11 @@ const makeGameStream = async (squares, gameMoveAnalysis) => {
     let finalIndex = Object.keys(gameMoveAnalysis).length
     let moveIndex = -1
 
+    let whiteEvalBar = document.getElementsByClassName('white-bar')[0]
+    let blackEvalBar = document.getElementsByClassName('black-bar')[0]
+    let spanWhiteVal = whiteEvalBar.querySelectorAll('span')[0]
+    let spanBlackVal = blackEvalBar.querySelectorAll('span')[0]
+
     const isDigit = value => "0123456789".includes(value);
 
     const cleanBoard = () =>
@@ -54,10 +59,42 @@ const makeGameStream = async (squares, gameMoveAnalysis) => {
         })
     }
 
+    const manageEvalBar = (mate_in, evaluation, win_advantage) => {
+        if (mate_in === 0) {
+            if (moveIndex % 2 == 0) {
+                spanWhiteVal.innerText = "1-0"
+                blackEvalBar.style.height = "0%"
+            } else {
+                spanBlackVal.innerText = "0-1"
+                blackEvalBar.style.height = "100%"
+            }
+        } else {
+            blackEvalBar.style.height = 100-win_advantage*100+"%"
+            
+            if (evaluation >= 0) {
+                spanWhiteVal.innerText = mate_in ? "M"+Math.abs(mate_in) : Math.abs(evaluation).toFixed(1)
+                spanBlackVal.innerText = ""
+            } else {
+                spanBlackVal.innerText = mate_in ? "M"+Math.abs(mate_in) : Math.abs(evaluation).toFixed(1)
+                spanWhiteVal.innerText = ""
+            }
+        }
+    }
+
+    const manageCastling = (dirct, fromSquare, toSquare) => {
+        if ((toSquare - fromSquare) > 0) {
+            const rook = squares[dirct === 1? fromSquare+3 :toSquare-1].querySelectorAll('img')[0]
+            squares[dirct === 1? toSquare-1 :fromSquare+3].appendChild(rook)
+        } else {
+            const rook = squares[dirct === 1? fromSquare-4 :toSquare+1].querySelectorAll('img')[0]
+            squares[dirct === 1? toSquare+1 :fromSquare-4].appendChild(rook)
+        }
+    }
+
     const manageBoardState = direction => {
 
         if (direction === 1 && moveIndex < finalIndex-1) { 
-            moveIndex += 1
+            moveIndex++
 
             const fromSquare = gameMoveAnalysis[moveIndex]['from_square']
             const toSquare = gameMoveAnalysis[moveIndex]['to_square']
@@ -73,16 +110,13 @@ const makeGameStream = async (squares, gameMoveAnalysis) => {
 
             squares[toSquare].appendChild(imgOrigin)
             
-            if (gameMoveAnalysis[moveIndex]['is_castling']) {
-                if ((toSquare - fromSquare) > 0) {
-                    let rook = squares[fromSquare+3].querySelectorAll('img')[0]
-                    squares[toSquare-1].appendChild(rook)
-                } else {
-                    let rook = squares[fromSquare-4].querySelectorAll('img')[0]
-                    squares[toSquare+1].appendChild(rook)
-                }
-            }
+            if (gameMoveAnalysis[moveIndex]['is_castling'])
+                manageCastling(direction, fromSquare, toSquare)
             
+            manageEvalBar(gameMoveAnalysis[moveIndex]['mate_in'],
+                          gameMoveAnalysis[moveIndex]['evaluation'], 
+                          gameMoveAnalysis[moveIndex]['win_advantage'])
+
         } else if (direction === 0 && moveIndex >= 0) {
             
             const fromSquare = gameMoveAnalysis[moveIndex]['from_square']
@@ -90,39 +124,45 @@ const makeGameStream = async (squares, gameMoveAnalysis) => {
             
             let img = squares[toSquare].querySelectorAll('img')[0]
 
-            const promotion_to = gameMoveAnalysis[moveIndex]['promotion_to']
-            if (promotion_to) 
+            if (gameMoveAnalysis[moveIndex]['promotion_to']) 
                 img.src = `/static/images/${pieces[moveIndex % 2 == 0? 'P':'p']}.svg`
 
             squares[fromSquare].appendChild(img)
 
-            if (gameMoveAnalysis[moveIndex]['is_castling']) {
-                if ((toSquare - fromSquare) > 0) {
-                    let rook = squares[toSquare-1].querySelectorAll('img')[0]
-                    squares[fromSquare+3].appendChild(rook)
-                } else {
-                    let rook = squares[toSquare+1].querySelectorAll('img')[0]
-                    squares[fromSquare-4].appendChild(rook)
-                }
-            }
+            if (gameMoveAnalysis[moveIndex]['is_castling'])
+                manageCastling(direction, fromSquare, toSquare)
             
             if (moveIndex != 0) {
                 const previousFen = gameMoveAnalysis[moveIndex-1]['fen']
                 const pieceChr = expandAndReverseFenRanks(previousFen).replaceAll('/', '')[63-toSquare]
                 if (pieceChr !== "#") squares[toSquare].appendChild(createImgPiece(pieceChr))
             }
-            moveIndex -= 1
+            moveIndex--
+
+            if (moveIndex === -1)
+                manageEvalBar(null, 0.2, 0.51)
+            else
+                manageEvalBar(gameMoveAnalysis[moveIndex]['mate_in'],
+                              gameMoveAnalysis[moveIndex]['evaluation'], 
+                              gameMoveAnalysis[moveIndex]['win_advantage'])
 
         } else if (direction === -1 && moveIndex != 0) {
             moveIndex = -1
             loadPieces(STARTING_FEN)
+            manageEvalBar(null, 0.2, 0.51)
+
         } else if (direction === 2 && moveIndex != (finalIndex-1)) {
             moveIndex = finalIndex-1
             loadPieces(gameMoveAnalysis[moveIndex]['fen'])
+
+            manageEvalBar(gameMoveAnalysis[moveIndex]['mate_in'],
+                          gameMoveAnalysis[moveIndex]['evaluation'], 
+                          gameMoveAnalysis[moveIndex]['win_advantage'])
         }
     }
 
     loadPieces(STARTING_FEN)
+    manageEvalBar(null, 0.2, 0.51)
     
     document.addEventListener('keydown', event => {
         if (event.key === 'ArrowLeft') {
@@ -154,10 +194,20 @@ const makeGameStream = async (squares, gameMoveAnalysis) => {
     for (const element of document.getElementsByClassName('square')) 
         squares[element.id] = element
 
+    const playerOne = document.getElementById('bp-name-1')
+    const playerTwo = document.getElementById('bp-name-2')
+
+    const playerOneNameSpan = document.createElement('span')
+    const playerTwoNameSpan = document.createElement('span')
+
+    playerOne.appendChild(playerOneNameSpan)
+    playerTwo.appendChild(playerTwoNameSpan)
+
     const setPlayerName = (elementName, playerName) => {
-        const blackPlayerName = document.createElement('span')
-        blackPlayerName.innerText = playerName
-        document.getElementById(elementName).appendChild(blackPlayerName)
+        const player = document.getElementById(elementName)
+        const playerNameSpan = player.querySelector('span')
+        playerNameSpan.innerText = playerName
+        player.appendChild(playerNameSpan)
     }
 
     return () => document
@@ -169,8 +219,8 @@ const makeGameStream = async (squares, gameMoveAnalysis) => {
                 body: JSON.stringify({ pgn_code: text_area.value})})
             .then(data => data.json())
             .then(data => {
-                setPlayerName('bp-name-1', data[0]['black_player'])
-                setPlayerName('bp-name-2', data[0]['white_player'])
+                playerOneNameSpan.innerText = data[0]['black_player']
+                playerTwoNameSpan.innerText = data[0]['white_player']
                 makeGameStream(squares, data[1])
             })
     })})()()

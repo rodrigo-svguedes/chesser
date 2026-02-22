@@ -1,9 +1,5 @@
 [default]
 DEBUG = true
-FLASK_ADMIN_NAME = "Admin"
-FLASK_ADMIN_TEMPLATE_MODE = "bootstrap3"
-FLASK_ADMIN_SWATCH = 'cerulean'
-TITLE = "ChessFish"
-SECRET_KEY = "asdfasdfdfsa"
-PASSWORD_SCHEMES = ['pbkdf2_sha512', 'md5_crypt']
+TITLE = "Chesser"
+STOCK_FISH_PATH="{your_stock_fish_path_here}"
 EXTENSIONS = []
