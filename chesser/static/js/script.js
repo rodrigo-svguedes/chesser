@@ -8,10 +8,7 @@ const STARTING_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR'
 -1: go to the beginning, 
  2: go the end;
  */
-const makeGameStream = async (squares, gameMoveAnalysis) => {
-
-    let pieces = await fetch(`${API_BASE}/board/pieces`)
-                        .then(response => response.json())
+const makeGameStream = (squares, pieces, gameMoveAnalysis) => {
 
     let finalIndex = Object.keys(gameMoveAnalysis).length
     let moveIndex = -1
@@ -81,6 +78,23 @@ const makeGameStream = async (squares, gameMoveAnalysis) => {
         }
     }
 
+    const manageEnPassant = (dirct, fromSquare, toSquare) => {
+        if (dirct === 1) {
+            if (Math.abs(toSquare - fromSquare) == 7) {
+                squares[fromSquare + (moveIndex % 2 == 0? -1 : 1)].querySelector('img').remove()
+            } else {
+                squares[fromSquare + (moveIndex % 2 == 0? 1 : -1)].querySelector('img').remove()
+            }
+        } else {
+            let previousImg = createImgPiece((moveIndex % 2 == 0? 'p' : 'P'))
+            if (Math.abs(toSquare - fromSquare) == 7) {
+                squares[fromSquare + (moveIndex % 2 == 0? -1 : 1)].appendChild(previousImg)
+            } else {
+                squares[fromSquare + (moveIndex % 2 == 0? 1 : -1)].appendChild(previousImg)
+            }
+        }
+    }
+
     const manageCastling = (dirct, fromSquare, toSquare) => {
         if ((toSquare - fromSquare) > 0) {
             const rook = squares[dirct === 1? fromSquare+3 :toSquare-1].querySelectorAll('img')[0]
@@ -91,7 +105,10 @@ const makeGameStream = async (squares, gameMoveAnalysis) => {
         }
     }
 
-    const manageBoardState = direction => {
+    loadPieces(STARTING_FEN)
+    manageEvalBar(null, 0.2, 0.51)
+
+    return direction => {
 
         if (direction === 1 && moveIndex < finalIndex-1) { 
             moveIndex++
@@ -99,14 +116,17 @@ const makeGameStream = async (squares, gameMoveAnalysis) => {
             const fromSquare = gameMoveAnalysis[moveIndex]['from_square']
             const toSquare = gameMoveAnalysis[moveIndex]['to_square']
             
-            const imgOrigin = squares[fromSquare].querySelectorAll('img')[0]
+            const imgOrigin = squares[fromSquare].querySelector('img')
 
-            const imgDestiny = squares[toSquare].querySelectorAll('img')
-            if (imgDestiny.length != 0) imgDestiny[0].remove()
+            const imgDestiny = squares[toSquare].querySelector('img')
+            if (imgDestiny) imgDestiny.remove()
 
             const promotion_to = gameMoveAnalysis[moveIndex]['promotion_to']
             if (promotion_to)
                 imgOrigin.src = `/static/images/${pieces[promotion_to]}.svg`
+
+            if (gameMoveAnalysis[moveIndex]['en_passant_move'])
+                manageEnPassant(direction, fromSquare, toSquare)
 
             squares[toSquare].appendChild(imgOrigin)
             
@@ -129,6 +149,9 @@ const makeGameStream = async (squares, gameMoveAnalysis) => {
 
             squares[fromSquare].appendChild(img)
 
+            if (gameMoveAnalysis[moveIndex]['en_passant_move'])
+                manageEnPassant(direction, fromSquare, toSquare)
+
             if (gameMoveAnalysis[moveIndex]['is_castling'])
                 manageCastling(direction, fromSquare, toSquare)
             
@@ -137,6 +160,7 @@ const makeGameStream = async (squares, gameMoveAnalysis) => {
                 const pieceChr = expandAndReverseFenRanks(previousFen).replaceAll('/', '')[63-toSquare]
                 if (pieceChr !== "#") squares[toSquare].appendChild(createImgPiece(pieceChr))
             }
+
             moveIndex--
 
             if (moveIndex === -1)
@@ -160,34 +184,10 @@ const makeGameStream = async (squares, gameMoveAnalysis) => {
                           gameMoveAnalysis[moveIndex]['win_advantage'])
         }
     }
-
-    loadPieces(STARTING_FEN)
-    manageEvalBar(null, 0.2, 0.51)
-    
-    document.addEventListener('keydown', event => {
-        if (event.key === 'ArrowLeft') {
-            manageBoardState(0);
-        } else if (event.key === 'ArrowRight') {
-            manageBoardState(1);
-        } else if (event.key === 'ArrowUp') {
-            manageBoardState(-1);
-        } else if (event.key === 'ArrowDown') {
-            manageBoardState(2);
-        }
-    });
-
-    document.getElementById('btn-gotostart')
-            .addEventListener("click", () => manageBoardState(-1))
-    document.getElementById('btn-previous')
-            .addEventListener("click", () => manageBoardState(0))
-    document.getElementById('btn-next')
-            .addEventListener("click", () => manageBoardState(1))
-    document.getElementById('btn-gotoend')
-            .addEventListener("click", () => manageBoardState(2))
 }
 
     
-(() => {
+(async () => {
     const text_area = document.getElementById('pgn_ta')
 
     let squares = {}
@@ -203,14 +203,39 @@ const makeGameStream = async (squares, gameMoveAnalysis) => {
     playerOne.appendChild(playerOneNameSpan)
     playerTwo.appendChild(playerTwoNameSpan)
 
-    const setPlayerName = (elementName, playerName) => {
-        const player = document.getElementById(elementName)
-        const playerNameSpan = player.querySelector('span')
-        playerNameSpan.innerText = playerName
-        player.appendChild(playerNameSpan)
-    }
+    let pieces = await fetch(`${API_BASE}/board/pieces`).then(response => response.json())
 
-    return () => document
+    let manageBoardState = null;
+
+    document.addEventListener('keydown', event => {
+        const actions = {
+            'ArrowLeft': 0,
+            'ArrowRight': 1,
+            'ArrowUp': -1,
+            'ArrowDown': 2
+        }
+        if (actions[event.key] != null && manageBoardState)
+            manageBoardState(actions[event.key])
+    });
+
+    document.getElementById('btn-gotostart')
+            .addEventListener("click", () => {
+                if (manageBoardState) manageBoardState(-1)
+            })
+    document.getElementById('btn-previous')
+            .addEventListener("click", () => {
+                if (manageBoardState) manageBoardState(0)
+            })
+    document.getElementById('btn-next')
+            .addEventListener("click", () => {
+                if (manageBoardState) manageBoardState(1)
+            })
+    document.getElementById('btn-gotoend')
+            .addEventListener("click", () => {
+                if (manageBoardState) manageBoardState(2)
+            })
+
+    document
         .getElementById('importPGNBtn')
         .addEventListener('click', () => {
             fetch(`${API_BASE}/board/pgn/analyse`, {
@@ -221,9 +246,9 @@ const makeGameStream = async (squares, gameMoveAnalysis) => {
             .then(data => {
                 playerOneNameSpan.innerText = data[0]['black_player']
                 playerTwoNameSpan.innerText = data[0]['white_player']
-                makeGameStream(squares, data[1])
+                manageBoardState = makeGameStream(squares, pieces, data[1])
             })
-    })})()()
+})})()
 
 
 function openTab(evt, tabName) {

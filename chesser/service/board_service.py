@@ -88,6 +88,9 @@ def analyse_game(stockfish_path, pgn_code):
             'to_square': move.to_square,
             'is_castling': board.is_castling(move)}
 
+        if board.is_en_passant(move):
+            analyse_data[index]['en_passant_move'] = True
+
         board.push(move)
         
         if move.promotion:
