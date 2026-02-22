@@ -13,4 +13,6 @@ def get_pieces():
 
 @board_bp.route('/pgn/analyse', methods=['POST'])
 def get_fen_list_from_pgn():
-    return make_response(jsonify(board_service.analyse_game(request.get_json()['pgn_code'])), 200)
+    stockfish_path = board_bp.config['STOCK_FISH_PATH']
+    response = board_service.analyse_game(stockfish_path, request.get_json()['pgn_code'])
+    return make_response(jsonify(response), 200)

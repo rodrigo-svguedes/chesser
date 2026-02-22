@@ -5,8 +5,12 @@
 		<div id="bp-name-1" class="board-player top"></div>
 		<div class="board-middle">
 			<div class="board-evaluation-bar">
-				<div class="white-bar"><span class="eval-num top dark">+0.2</span></div>
-				<div class="black-bar"><span class="eval-num bottom white">-0.0</span></div>
+				<div class="white-bar">
+					<span class="eval-num bottom dark"></span>
+					<div class="black-bar">
+						<span class="eval-num top white"></span>
+					</div>
+				</div>
 			</div>
 			<div class="board-chessboard">
 				{% for i in range(7, -1, -1) %}
