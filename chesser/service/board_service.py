@@ -59,15 +59,15 @@ def convert_stockfish_centipawns_to_bar_score(score, mate_threshold=10.0):
 
 
 def win_advantage(cp):
-    cp = max(min(cp, 1000), -1000) 
-    return 1 / (1 + math.exp(-0.004 * cp))
+    return 50 + 50 * (2 / (1 + math.exp(-0.00368208 * cp)) - 1)
 
 
 def analyse_game(stockfish_path, pgn_code):
 
     #TODO: We need a pool of stockfish's instances
     engine = chess.engine.SimpleEngine.popen_uci(stockfish_path)
-
+    engine.configure({"UCI_ShowWDL": True})
+    
     game = chess.pgn.read_game(io.StringIO(pgn_code))
     
     board = game.board()
@@ -86,6 +86,7 @@ def analyse_game(stockfish_path, pgn_code):
             'engine_moves': {},
             'from_square': move.from_square,
             'to_square': move.to_square,
+            'is_check': board.gives_check(move),
             'is_castling': board.is_castling(move)}
 
         if board.is_en_passant(move):
@@ -102,6 +103,7 @@ def analyse_game(stockfish_path, pgn_code):
         info = engine.analyse(board, chess.engine.Limit(depth=10), multipv=3)
 
         score = info[0]['score'].white()
+
         evaluation = convert_stockfish_centipawns_to_bar_score(score)
         
         if not score.is_mate():
