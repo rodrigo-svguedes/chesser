@@ -71,7 +71,7 @@ const API_BASE = '';
         if (actions[event.key] != null && boardStateManager)
             boardStateManager(actions[event.key])
     });
-    
+
     btnGotoStart.addEventListener("click", () => boardStateManager(-1))
     btnGotoPrevious.addEventListener("click", () => boardStateManager(0))
     btnGotoNext.addEventListener("click", () => boardStateManager(1))
@@ -85,14 +85,15 @@ const API_BASE = '';
             interval = setInterval(() => {
                 if (boardStateManager(1)) {
                     clearInterval(interval)
-                    imgPlayBtn.src = 'static/images/play.svg'
+                    imgPlayBtn.src = 'static/images/icons/play.svg'
+                    play = false
                 }
             }, 500)
-            imgPlayBtn.src = 'static/images/pause.svg'
+            imgPlayBtn.src = 'static/images/icons/pause.svg'
             play = true
         } else {
             clearInterval(interval)
-            imgPlayBtn.src = 'static/images/play.svg'
+            imgPlayBtn.src = 'static/images/icons/play.svg'
             play = false
         }
     })
