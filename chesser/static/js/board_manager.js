@@ -72,7 +72,7 @@ export const boardManagerFactory = (squares, pieces, playSoundEffect, gameMoveAn
 
     const createImgPiece = pieceChar => {
         const piece_img = document.createElement('img');
-        piece_img.src = `/static/images/${pieces[pieceChar]}.svg`
+        piece_img.src = `/static/images/pieces/${pieces[pieceChar]}.svg`
         piece_img.draggable = true
         return piece_img
     }
@@ -161,7 +161,7 @@ export const boardManagerFactory = (squares, pieces, playSoundEffect, gameMoveAn
         const imgDestiny = squares[toSquare].querySelector('img')
 
         if (promotionTo) {
-            imgOrigin.src = `/static/images/${pieces[promotionTo]}.svg`
+            imgOrigin.src = `/static/images/pieces/${pieces[promotionTo]}.svg`
             playSoundEffect('promotion')
         } else if (isEnPassant) {
             handleEnPassant(true, fromSquare, toSquare)
@@ -201,7 +201,7 @@ export const boardManagerFactory = (squares, pieces, playSoundEffect, gameMoveAn
         const isCheck = gameMoveAnalysis[moveIndex]['is_check']
 
         if (promotionTo) {
-            img.src = `/static/images/${pieces[moveIndex % 2 == 0? 'P':'p']}.svg`
+            img.src = `/static/images/pieces/${pieces[moveIndex % 2 == 0? 'P':'p']}.svg`
             playSoundEffect('promotion')
         } else if (isEnPassant) {
             handleEnPassant(false, fromSquare, toSquare)
