@@ -1,46 +1,27 @@
 import { boardManagerFactory } from '/static/js/board_manager.js';
+import { handleReviewBar, addPGNTabListener } from '/static/js/side_board_manager.js';
 import { soundEffectManagerFactory } from '/static/js/sound_effect.js';
 
 
 const API_BASE = '';
 
 (async () => {
-    const text_area = document.getElementById('pgn_ta')
+    const squares = {}
     const playerOne = document.getElementById('bp-name-1')
     const playerTwo = document.getElementById('bp-name-2')
+    const text_area = document.getElementById('pgn_ta')
     const board = document.getElementsByClassName('board-chessboard')[0]
-    const playerOneNameSpan = document.createElement('span')
-    const playerTwoNameSpan = document.createElement('span')
-    const squares = {}
     const pieces = await fetch(`${API_BASE}/board/pieces`).then(response => response.json())
     const playSoundEffect = await soundEffectManagerFactory()
-    const importPGNBtnTab = document.getElementById('importPGNBtn')
-    const chessComBtnTab = document.getElementById('importChessComBtn')
-    const importPGNTab = document.getElementById('ImportPGNTab')
-    const chessComTab = document.getElementById('ImportChessComTab')
     const btnGotoStart = document.getElementById('btn-gotostart')
     const btnGotoPrevious = document.getElementById('btn-previous')
     const btnGotoNext = document.getElementById('btn-next')
     const btnGotoEnd = document.getElementById('btn-gotoend')
     const playBtn = document.getElementById('btn-play')
     const imgPlayBtn = playBtn.getElementsByTagName('img')[0]
-    
-    importPGNBtnTab.addEventListener('click', () => {
-        chessComBtnTab.classList.remove('active')
-        importPGNBtnTab.classList.add('active')
 
-        importPGNTab.style.display = 'block'
-        chessComTab.style.display = 'none'
-    });
-
-    chessComBtnTab.addEventListener('click', () => {
-        chessComBtnTab.classList.add('active')
-        importPGNBtnTab.classList.remove('active')
-        
-        importPGNTab.style.display = 'none'
-        chessComTab.style.display = 'block'
-    });
-
+    const playerOneNameSpan = document.createElement('span')
+    const playerTwoNameSpan = document.createElement('span')
     playerOne.appendChild(playerOneNameSpan)
     playerTwo.appendChild(playerTwoNameSpan)
 
@@ -98,19 +79,21 @@ const API_BASE = '';
         }
     })
 
-    importPGNTab
-        .addEventListener('click', () => {
-            if (text_area.value) 
-                fetch(`${API_BASE}/board/pgn/analyse`, {
-                    method: 'POST',
-                    headers: {"Content-Type": "application/json"},
-                    body: JSON.stringify({ pgn_code: text_area.value})})
-                .then(data => data.json())
-                .then(data => {
-                    playerOneNameSpan.innerText = data[0]['black_player']
-                    playerTwoNameSpan.innerText = data[0]['white_player']
-                    boardStateManager = boardManagerFactory(squares, pieces, playSoundEffect, data[1])
-                })
-})})()
+    addPGNTabListener(() => {
+        if (text_area.value) {
+            fetch(`${API_BASE}/board/pgn/analyse`, {
+                method: 'POST',
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({ pgn_code: text_area.value})})
+            .then(data => data.json())
+            .then(data => {
+                playerOneNameSpan.innerText = data[0]['black_player']
+                playerTwoNameSpan.innerText = data[0]['white_player']
+                handleReviewBar(data[1])
+                boardStateManager = boardManagerFactory(squares, pieces, playSoundEffect, data[1])
+            })
+        }
+    })
+})()
 
 
