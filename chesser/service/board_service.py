@@ -1,16 +1,13 @@
 import io
 import math
-
+from decimal import Decimal
 from collections import namedtuple
 
 import chess
 import chess.pgn
 import chess.engine
 
-
 Board = namedtuple('Board', 'ranks, files')
-
-
 def get_board_coordinates():
     ranks = {0: '1', 8: '2', 16: '3', 24: '4', 32: '5', 40: '6', 48: '7', 56: '8'}
     files = {0: 'a', 1: 'b', 2: 'c', 3: 'd', 4: 'e', 5: 'f', 6: 'g', 7: 'h'}
@@ -33,43 +30,67 @@ def get_svg_piece_names():
         'P': 'pawn-w',
     }
 
-
-def convert_stockfish_centipawns_to_bar_score(score, mate_threshold=10.0):
-    
+def win_advantage(score):
+    """
+        That's lichess function to get the 
+        winning chance of a position based 
+        on stockfish's centpawns score
+    """
     if score.is_mate():
-        mate_in = score.mate()
-        if mate_in > 0:
-            return 319.99 - (abs(mate_in) / 1000) * 0.1
-        else:
-            return -319.99 + (abs(mate_in) / 1000) * 0.1
-    
-    cp_score = score.score()
-    
-    max_score = mate_threshold
-    
-    if abs(cp_score) <= 500:
-        converted = cp_score / 100.0
+        return 100 if score.mate() > 0 else 0
+    return 50 + 50 * (2 / (1 + math.exp(-0.00368208 * score.score())) - 1)
+
+
+MATE_THRESHOLD = 10
+def score_to_evalbar_points(score, win_adv):
+    """
+        A function to normalize the centpawns score
+        provided by the stockfish.
+    """
+    return MATE_THRESHOLD if score.is_mate() else (win_adv - 50) / 5
+
+
+def accuracy_from_win_percents(before: Decimal, after: Decimal):
+    """
+        That's lichess function to get the accuracy of a move
+    """
+    if after >= before: 
+        return 100
     else:
-        sign = 1 if cp_score > 0 else -1
-        abs_score = abs(cp_score)
-        compressed = max_score * (1 - math.exp(-abs_score / 500))
-        converted = sign * compressed
+        winDiff = before - after
+        raw = 103.1668100711649 * math.exp(-0.04354415386753951 * winDiff) + -3.166924740191411
+        raw + 1 # uncertainty bonus (due to imperfect analysis)
+        if raw > 100: return 100
+        if raw < 0: return 0
+
+
+def classify_move(previous_win_adv, win_adv):
+    """
+        A function to classify the move according to chess.com
+        TODO: Still need to implement all the logic
+    """
+    win_diff = abs(win_adv/100 - previous_win_adv/100)
     
-    return max(min(converted, max_score), -max_score)
-
-
-def win_advantage(cp):
-    return 50 + 50 * (2 / (1 + math.exp(-0.00368208 * cp)) - 1)
+    if win_diff <= 0.01:
+        return "best"
+    elif win_diff <= 0.02:
+        return "excellent"
+    elif win_diff <= 0.05:
+        return "good"
+    elif win_diff <= 0.1:
+        return "inaccuracy"
+    elif win_diff <= 0.2:
+        return "mistake"
+    
+    return "blunder"
 
 
 def analyse_game(stockfish_path, pgn_code):
 
     #TODO: We need a pool of stockfish's instances
     engine = chess.engine.SimpleEngine.popen_uci(stockfish_path)
-    engine.configure({"UCI_ShowWDL": True})
     
     game = chess.pgn.read_game(io.StringIO(pgn_code))
-    
     board = game.board()
 
     game_data = {
@@ -87,11 +108,9 @@ def analyse_game(stockfish_path, pgn_code):
             'from_square': move.from_square,
             'to_square': move.to_square,
             'is_check': board.gives_check(move),
-            'is_castling': board.is_castling(move)}
-
-        if board.is_en_passant(move):
-            analyse_data[index]['en_passant_move'] = True
-
+            'is_castling': board.is_castling(move),
+            'en_passant_move': board.is_en_passant(move)}
+        
         board.push(move)
         
         if move.promotion:
@@ -103,22 +122,16 @@ def analyse_game(stockfish_path, pgn_code):
         info = engine.analyse(board, chess.engine.Limit(depth=10), multipv=3)
 
         score = info[0]['score'].white()
+        prob = win_advantage(score)
+        evaluation = score_to_evalbar_points(score, prob)
 
-        evaluation = convert_stockfish_centipawns_to_bar_score(score)
-        
-        if not score.is_mate():
-            prob = win_advantage(score.score())
-            analyse_data[index]['win_advantage'] = f"{prob:.2f}"
-        else:
+        analyse_data[index]['win_advantage'] = f"{prob:.2f}"
+        if score.is_mate():
             analyse_data[index]['mate_in'] = score.mate()
-            if score.mate() < 0:
-                analyse_data[index]['win_advantage'] = f"{0:.2f}"
-            elif score.mate() > 0:
-                analyse_data[index]['win_advantage'] = f"{1:.2f}"
-            elif index % 2 == 0:
-                analyse_data[index]['win_advantage'] = f"{1:.2f}"
-            else:
-                analyse_data[index]['win_advantage'] = f"{0:.2f}"
+        
+        if index > 1:
+            move_class = classify_move(float(analyse_data[index-2]['win_advantage']), prob)
+            analyse_data[index]['move_class'] = move_class
 
         analyse_data[index]['evaluation'] = f"{evaluation:.1f}"
     

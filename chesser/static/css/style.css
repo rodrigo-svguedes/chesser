@@ -158,6 +158,18 @@ body, html {
     position: absolute;
 }
 
+.classificons {
+    position: absolute;
+    font-size: 14px;
+    font-weight: bold;
+    padding: 2px 4px;
+    border-radius: 2px;
+    top: -15%;
+    right: -10%;
+    width: 20%;
+    z-index: 900;
+} 
+
 .coord {
     position: absolute;
     font-size: 14px;
@@ -203,14 +215,11 @@ body, html {
 
 .review {
     display: flex;
+    visibility: hidden;
     flex-direction: column;
     height: 65%;
     width: 90%;
     margin-left: 5%;
-}
-
-.review div {
-    display: none;
 }
 
 .controls {
