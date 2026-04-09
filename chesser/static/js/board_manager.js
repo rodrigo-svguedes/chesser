@@ -48,12 +48,12 @@ const handleHighlight = (squares, fromSquare, toSquare, onlyClean=false) => {
 
 const handleCastling = (isFoward, squares, fromSquare, toSquare) => {
     if ((toSquare - fromSquare) > 0) {
-        const rook = squares[isFoward? fromSquare+3 :toSquare-1].querySelectorAll('img')[0]
+        const rook = squares[isFoward? fromSquare+3 :toSquare-1].querySelectorAll(':scope > img')[0]
         const rookSquare = squares[isFoward? toSquare-1 :fromSquare+3]
         pieceTransitionHandler(rook, rookSquare)
         rookSquare.appendChild(rook)
     } else {
-        const rook = squares[isFoward? fromSquare-4 :toSquare+1].querySelectorAll('img')[0]
+        const rook = squares[isFoward? fromSquare-4 :toSquare+1].querySelectorAll(':scope > img')[0]
         const rookSquare = squares[isFoward? toSquare+1 :fromSquare-4]
         pieceTransitionHandler(rook, rookSquare)
         rookSquare.appendChild(rook)
@@ -62,7 +62,8 @@ const handleCastling = (isFoward, squares, fromSquare, toSquare) => {
 
 const handleClassificationIcon = (isFoward, squares, classMove, toSquare, oldToSquare) => {
     
-    const oldImg = squares[isFoward? oldToSquare : toSquare].querySelector('span > img')
+    const oldImgSquare = squares[isFoward? oldToSquare : toSquare]
+    const oldImg = oldImgSquare? oldImgSquare.querySelector('span > img') : null
     if (oldImg) oldImg.remove()
 
     if (classMove) {
@@ -73,12 +74,14 @@ const handleClassificationIcon = (isFoward, squares, classMove, toSquare, oldToS
     }
 }
 
-const handleEnPassant = (isFoward, isWhiteTurn, squares, fromSquare, toSquare) => {
+const handleEnPassant = (isFoward, isWhiteTurn, squares, fromSquare, toSquare, pieces) => {
     if (isFoward) {
         if (Math.abs(toSquare - fromSquare) == 7) {
-            squares[fromSquare + (isWhiteTurn? -1 : 1)].querySelector('img').remove()
+            console.log(fromSquare + (isWhiteTurn? -1 : 1))
+            squares[fromSquare + (isWhiteTurn? -1 : 1)].querySelector(':scope > img').remove()
         } else {
-            squares[fromSquare + (isWhiteTurn? 1 : -1)].querySelector('img').remove()
+            console.log(fromSquare + (isWhiteTurn? 1 : -1))
+            squares[fromSquare + (isWhiteTurn? 1 : -1)].querySelector(':scope > img').remove()
         }
     } else {
         const previousImg = createImgPiece(pieces, (isWhiteTurn? 'p' : 'P'))
@@ -99,16 +102,17 @@ const handleEvalBar = (isWhiteTurn, mate_in, evaluation, win_advantage) => {
             spanBlackVal.innerText = "0-1"
             blackEvalBar.style.height = "100%"
         }
+        return
+    }
+
+    blackEvalBar.style.height = 100-win_advantage+"%"
+    
+    if (win_advantage > 50) {
+        spanWhiteVal.innerText = mate_in ? "M"+Math.abs(mate_in) : Math.abs(evaluation).toFixed(1)
+        spanBlackVal.innerText = ""
     } else {
-        blackEvalBar.style.height = 100-win_advantage+"%"
-        
-        if (mate_in >= 0) {
-            spanWhiteVal.innerText = mate_in ? "M"+Math.abs(mate_in) : Math.abs(evaluation).toFixed(1)
-            spanBlackVal.innerText = ""
-        } else {
-            spanBlackVal.innerText = mate_in ? "M"+Math.abs(mate_in) : Math.abs(evaluation).toFixed(1)
-            spanWhiteVal.innerText = ""
-        }
+        spanBlackVal.innerText = mate_in ? "M"+Math.abs(mate_in) : Math.abs(evaluation).toFixed(1)
+        spanWhiteVal.innerText = ""
     }
 }
 
@@ -160,23 +164,26 @@ export const boardManagerFactory = (squares, pieces, playSoundEffect, gameMoveAn
     const moveFoward = () => {
         moveIndex++
         const move = gameMoveAnalysis[moveIndex]
-        const previousMove = gameMoveAnalysis[moveIndex-1]
         const fromSquare = move['from_square']
         const toSquare = move['to_square']
         const promotionTo = move['promotion_to']
-        const isEnPassant = move['en_passant_move']
+        const isEnPassant = move['is_en_passant']
         const isCastling = move['is_castling']
         const isCheck = move['is_check']
         const classMove = move['move_class']
-
+        const previousMove = gameMoveAnalysis[moveIndex-1]
+        const previousToSquare = previousMove? previousMove['to_square']: null
         const imgOrigin = squares[fromSquare].querySelector(':scope > img')
         const imgDestiny = squares[toSquare].querySelector(':scope > img')
+
+        if (moveIndex >= 0)
+            handleClassificationIcon(true, squares, classMove, toSquare, previousToSquare)
 
         if (promotionTo) {
             imgOrigin.src = `/static/images/pieces/${pieces[promotionTo]}.svg`
             playSoundEffect('promotion')
         } else if (isEnPassant) {
-            handleEnPassant(true, moveIndex % 2 == 0, squares, fromSquare, toSquare)
+            handleEnPassant(true, moveIndex % 2 == 0, squares, fromSquare, toSquare, pieces)
             playSoundEffect('capture')
         } else if (isCastling) {
             handleCastling(true, squares, fromSquare, toSquare)
@@ -184,9 +191,6 @@ export const boardManagerFactory = (squares, pieces, playSoundEffect, gameMoveAn
         } else if (isCheck) {
             playSoundEffect('move-check')
         }
-        
-        if (moveIndex > 0)
-            handleClassificationIcon(true, squares, classMove, toSquare, previousMove['to_square'])
 
         if (imgDestiny) {
             imgDestiny.remove()
@@ -208,21 +212,25 @@ export const boardManagerFactory = (squares, pieces, playSoundEffect, gameMoveAn
 
     const moveBackwards = () => {
         const move = gameMoveAnalysis[moveIndex]
-        const previousMove = gameMoveAnalysis[moveIndex-1]
         const fromSquare = move['from_square']
         const toSquare = move['to_square']
         const promotionTo = move['promotion_to']
-        const isEnPassant = move['en_passant_move']
+        const isEnPassant = move['is_en_passant']
         const isCastling = move['is_castling']
         const isCheck = move['is_check']
-
+        const previousMove = gameMoveAnalysis[moveIndex-1]
+        const moveClass = previousMove? previousMove['move_class'] : null
+        const previousToSquare = previousMove? previousMove['to_square'] : null
         const img = squares[toSquare].querySelectorAll(':scope > img')[0]
+
+        if (moveIndex >= 0)
+            handleClassificationIcon(false, squares, moveClass, toSquare, previousToSquare)
 
         if (promotionTo) {
             img.src = `/static/images/pieces/${pieces[moveIndex % 2 == 0? 'P':'p']}.svg`
             playSoundEffect('promotion')
         } else if (isEnPassant) {
-            handleEnPassant(false, moveIndex % 2 == 0, squares, fromSquare, toSquare)
+            handleEnPassant(false, moveIndex % 2 == 0, squares, fromSquare, toSquare, pieces)
             playSoundEffect('capture')
         } else if (isCastling) {
             handleCastling(false, squares, fromSquare, toSquare)
@@ -230,11 +238,7 @@ export const boardManagerFactory = (squares, pieces, playSoundEffect, gameMoveAn
         } else if (isCheck) {
             playSoundEffect('move-check')
         }
-
-        if (moveIndex > 0) {
-            handleClassificationIcon(false, squares, previousMove['move_class'], toSquare, previousMove['to_square'])
-        }
-        
+       
         if (moveIndex != 0) {
             const previousFen = previousMove['fen']
             const pieceChr = expandAndReverseFenRanks(previousFen)[63-toSquare]

@@ -1,5 +1,5 @@
 import { boardManagerFactory } from '/static/js/board_manager.js';
-import { handleReviewBar, addPGNTabListener } from '/static/js/side_board_manager.js';
+import { handleReviewBar, addPGNBtnListener } from '/static/js/side_board_manager.js';
 import { soundEffectManagerFactory } from '/static/js/sound_effect.js';
 
 
@@ -79,7 +79,7 @@ const API_BASE = '';
         }
     })
 
-    addPGNTabListener(() => {
+    addPGNBtnListener(() => {
         if (text_area.value) {
             fetch(`${API_BASE}/board/pgn/analyse`, {
                 method: 'POST',
