@@ -1,5 +1,4 @@
 [default]
 DEBUG = true
 TITLE = "Chesser"
-STOCK_FISH_PATH="{your_stock_fish_path_here}"
 EXTENSIONS = []
