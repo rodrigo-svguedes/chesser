@@ -1,21 +1,22 @@
-const importPGNBtnTab = document.getElementById('importPGNBtn')
-const chessComBtnTab = document.getElementById('importChessComBtn')
-const importPGNTab = document.getElementById('ImportPGNTab')
-const chessComTab = document.getElementById('ImportChessComTab')
+const importPGNTabBtn = document.getElementById('importPGNTabBtn')
+const chessComTabBtn = document.getElementById('importChessComTabBtn')
+const importPGNTab = document.getElementById('importPGNTab')
+const chessComTab = document.getElementById('importChessComTab')
+const importPGNBtn = document.getElementById('importPGNBtn')
 
 const review = document.getElementsByClassName('review')[0]
 
-importPGNBtnTab.addEventListener('click', () => {
-    chessComBtnTab.classList.remove('active')
-    importPGNBtnTab.classList.add('active')
+importPGNTabBtn.addEventListener('click', () => {
+    chessComTabBtn.classList.remove('active')
+    importPGNTabBtn.classList.add('active')
 
     importPGNTab.style.display = 'block'
     chessComTab.style.display = 'none'
 });
 
-chessComBtnTab.addEventListener('click', () => {
-    chessComBtnTab.classList.add('active')
-    importPGNBtnTab.classList.remove('active')
+chessComTabBtn.addEventListener('click', () => {
+    chessComTabBtn.classList.add('active')
+    importPGNTabBtn.classList.remove('active')
     
     importPGNTab.style.display = 'none'
     chessComTab.style.display = 'block'
@@ -39,4 +40,10 @@ export const handleReviewBar = (gameMoveAnalysis) => {
     review.style.visibility = 'visible'
 }
 
-export const addPGNTabListener = (func) => importPGNTab.addEventListener('click', func)
+export const addPGNBtnListener = (func) => {
+    importPGNBtn.addEventListener('click', () => {
+        importPGNBtn.disabled = true
+        func()
+        importPGNBtn.disabled = false
+    })
+}
