@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 from typing import Optional
 from decimal import Decimal
+from datetime import datetime, date
 
 
 @dataclass
@@ -27,4 +28,18 @@ class MoveAnalyse:
     move_class: Optional[str] = None
     win_advantage: Optional[Decimal] = None
     evaluation: Optional[Decimal] = None
-    engine_moves: list = field(default_factory=dict)
+    engine_moves: dict = field(default_factory=dict)
+
+
+@dataclass
+class UserArchive:
+    user_name: str
+    date_month: date
+    pgn_games: list = field(default_factory=list)
+    
+
+@dataclass
+class UserGamePGN:
+    user_name: str
+    register: datetime
+    pgn: str
