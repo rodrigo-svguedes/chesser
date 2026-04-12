@@ -1,9 +1,10 @@
-import { boardManagerFactory } from '/static/js/board_manager.js';
-import { handleReviewBar, addPGNBtnListener } from '/static/js/side_board_manager.js';
-import { soundEffectManagerFactory } from '/static/js/sound_effect.js';
+import { boardManagerFactory } from '/view/static/js/board_manager.js';
+import { handleReviewBar, addPGNBtnListener } from '/view/static/js/side_board_manager.js';
+import { soundEffectManagerFactory } from '/view/static/js/sound_effect.js';
 
 
 const API_BASE = '';
+const IMAGE_URI = '/view/static/images';
 
 (async () => {
     const squares = {}
@@ -66,15 +67,15 @@ const API_BASE = '';
             interval = setInterval(() => {
                 if (boardStateManager(1)) {
                     clearInterval(interval)
-                    imgPlayBtn.src = 'static/images/icons/play.svg'
+                    imgPlayBtn.src = `${IMAGE_URI}/icons/play.svg`
                     play = false
                 }
             }, 500)
-            imgPlayBtn.src = 'static/images/icons/pause.svg'
+            imgPlayBtn.src = `${IMAGE_URI}/icons/pause.svg`
             play = true
         } else {
             clearInterval(interval)
-            imgPlayBtn.src = 'static/images/icons/play.svg'
+            imgPlayBtn.src = `${IMAGE_URI}/icons/play.svg`
             play = false
         }
     })

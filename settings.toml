@@ -1,4 +1,4 @@
 [default]
 DEBUG = true
 TITLE = "Chesser"
-EXTENSIONS = []
+SQLALCHEMY_DATABASE_URI="sqlite:///chesser.db"

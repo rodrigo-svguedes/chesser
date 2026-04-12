@@ -1,4 +1,5 @@
 
+const IMAGE_URI = '/view/static/images';
 const STARTING_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR'
 
 const whiteEvalBar = document.getElementsByClassName('white-bar')[0]
@@ -32,7 +33,7 @@ const loadPieces = (squares, pieces, fen) => {
 
 const createImgPiece = (pieces, pieceChar) => {
     const piece_img = document.createElement('img')
-    piece_img.src = `/static/images/pieces/${pieces[pieceChar]}.svg`
+    piece_img.src = `${IMAGE_URI}/pieces/${pieces[pieceChar]}.svg`
     piece_img.draggable = true
     return piece_img
 }
@@ -68,7 +69,7 @@ const handleClassificationIcon = (isFoward, squares, classMove, toSquare, oldToS
 
     if (classMove) {
         const moveClassImg = document.createElement('img')
-        moveClassImg.src = `/static/images/classification_icons/${classMove}.svg`
+        moveClassImg.src = `${IMAGE_URI}/classification_icons/${classMove}.svg`
         const divClass = squares[isFoward? toSquare : oldToSquare].getElementsByClassName('classificons')[0]
         divClass.appendChild(moveClassImg)
     }
@@ -180,7 +181,7 @@ export const boardManagerFactory = (squares, pieces, playSoundEffect, gameMoveAn
             handleClassificationIcon(true, squares, classMove, toSquare, previousToSquare)
 
         if (promotionTo) {
-            imgOrigin.src = `/static/images/pieces/${pieces[promotionTo]}.svg`
+            imgOrigin.src = `${IMAGE_URI}/pieces/${pieces[promotionTo]}.svg`
             playSoundEffect('promotion')
         } else if (isEnPassant) {
             handleEnPassant(true, moveIndex % 2 == 0, squares, fromSquare, toSquare, pieces)
@@ -227,7 +228,7 @@ export const boardManagerFactory = (squares, pieces, playSoundEffect, gameMoveAn
             handleClassificationIcon(false, squares, moveClass, toSquare, previousToSquare)
 
         if (promotionTo) {
-            img.src = `/static/images/pieces/${pieces[moveIndex % 2 == 0? 'P':'p']}.svg`
+            img.src = `${IMAGE_URI}/pieces/${pieces[moveIndex % 2 == 0? 'P':'p']}.svg`
             playSoundEffect('promotion')
         } else if (isEnPassant) {
             handleEnPassant(false, moveIndex % 2 == 0, squares, fromSquare, toSquare, pieces)
