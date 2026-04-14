@@ -11,6 +11,14 @@ install:
 	pip install -r requirements.text && \
 	pip install -r requirements-dev.text
 
+create-db:
+	. env/bin/activate && \
+	flask --app chesser/app.py create-db
+
+drop-db:
+	. env/bin/activate && \
+	flask --app chesser/app.py drop-db
+
 clean:
 	@find . -name '*.py[cod]' -exec rm -rf {} \;
 	@find . -name '__pycache__' -exec rm -rf {} \;
