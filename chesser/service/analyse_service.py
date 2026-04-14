@@ -8,9 +8,6 @@ import chess.pgn
 import chess.engine
 import chess.polyglot
 
-from core.models import GameData
-from core.models import MoveAnalyse
-
 
 MATE_THRESHOLD = 10
 DECIMAL_ONE_HUNDRED = Decimal('100')
