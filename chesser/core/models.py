@@ -1,45 +1,24 @@
-from dataclasses import dataclass, field
-from typing import Optional
-from decimal import Decimal
+from typing import List
 from datetime import datetime, date
 
+from sqlalchemy import Integer, String, Date, DateTime, ForeignKey
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
-@dataclass
-class GameData:
-    white_player: str
-    black_player: str 
-    white_elo: int
-    black_elo: int
-    move_analyse_list: list = field(default_factory=list)
+from ext.database import db
 
 
-@dataclass
-class MoveAnalyse:
-    move: str
-    from_square: int
-    to_square: int
-    promotion_to: str
-    is_check: bool
-    is_castling: bool
-    is_en_passant: bool
-    fen: Optional[str] = None
-    mate_in: Optional[int] = None
-    best_move: Optional[str] = None
-    move_class: Optional[str] = None
-    win_advantage: Optional[Decimal] = None
-    evaluation: Optional[Decimal] = None
-    engine_moves: dict = field(default_factory=dict)
-
-
-@dataclass
-class UserArchive:
-    user_name: str
-    date_month: date
-    pgn_games: list = field(default_factory=list)
+class UserArchive(db.Model):
+    __tablename__ = 'user_archive'
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_name: Mapped[str] = mapped_column(String)
+    date_month: Mapped[date] = mapped_column(Date)
+    pgn_games: Mapped[List['GamePGN']] = relationship()
     
 
-@dataclass
-class UserGamePGN:
-    user_name: str
-    register: datetime
-    pgn: str
+class GamePGN(db.Model):
+    __tablename__ = 'game_pgn'
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_arch_id: Mapped[int] = mapped_column(Integer, ForeignKey('user_archive.id'))
+    register: Mapped[datetime] = mapped_column(DateTime)
+    pgn: Mapped[str] = mapped_column(String)
+
