@@ -88,10 +88,10 @@ const IMAGE_URI = '/view/static/images';
                 body: JSON.stringify({ pgn_code: text_area.value})})
             .then(data => data.json())
             .then(data => {
-                playerOneNameSpan.innerText = data[0]['black_player']
-                playerTwoNameSpan.innerText = data[0]['white_player']
-                handleReviewBar(data[1])
-                boardStateManager = boardManagerFactory(squares, pieces, playSoundEffect, data[1])
+                playerOneNameSpan.innerText = data['black_player']
+                playerTwoNameSpan.innerText = data['white_player']
+                handleReviewBar(data)
+                boardStateManager = boardManagerFactory(squares, pieces, playSoundEffect, data['move_analyse_list'])
             })
         }
     })

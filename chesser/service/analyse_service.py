@@ -1,7 +1,11 @@
-import io
 import os
 import math
+import statistics
+import itertools as it
+
 from decimal import Decimal, ROUND_DOWN
+from contextlib import suppress
+from dataclasses import replace
 
 import chess
 import chess.pgn
@@ -10,8 +14,7 @@ import chess.polyglot
 
 
 MATE_THRESHOLD = 10
-DECIMAL_ONE_HUNDRED = Decimal('100')
-DECIMAL_ZERO = Decimal('0')
+CP_CEILING = 1000
 
 
 def win_advantage(score):
@@ -21,11 +24,12 @@ def win_advantage(score):
         on stockfish's centpawns score
     """
     if score.is_mate():
-        return DECIMAL_ONE_HUNDRED if score.mate() >= 0 else DECIMAL_ZERO
+        return 100 if score.mate() >= 0 else 0
     
-    win_adv = Decimal(2 / (1 + math.exp(-0.00368208 * score.score())) - 1)
-    win_adv = min(1, win_adv) or max(-1, win_adv)
-    return Decimal(50 + 50 * win_adv)
+    win_adv = 2 / (1 + math.exp(-0.00368208 * score.score())) - 1
+    win_adv = max(min(1, win_adv), -1)
+
+    return 50 + 50 * max(min(win_adv, CP_CEILING), -CP_CEILING)
 
 
 def score_to_evalbar_points(score, win_adv):
@@ -33,22 +37,76 @@ def score_to_evalbar_points(score, win_adv):
         A function to normalize the centpawns score
         provided by the stockfish.
     """
-    return Decimal(MATE_THRESHOLD) if score.is_mate() else Decimal((win_adv - 50) / 5)
+    return MATE_THRESHOLD if score.is_mate() else (win_adv - 50) / 5
 
 
-def accuracy_from_win_percents(before: Decimal, after: Decimal):
+def accuracy_from_win_percents(before, after):
     """
         That's lichess function to get the accuracy of a move
     """
     if after >= before: 
-        return DECIMAL_ONE_HUNDRED
-    else:
-        winDiff = before - after
-        raw = 103.1668 * math.exp(-0.04354 * winDiff) + -3.1669
-        raw + 1 # uncertainty bonus (due to imperfect analysis)
-        if raw > 100: return DECIMAL_ONE_HUNDRED
-        if raw < 0: return DECIMAL_ZERO 
+        return 100
 
+    winDiff = before - after
+    raw = 103.1668100711649 * math.exp(-0.04354415386753951 * winDiff) - 3.166924740191411
+    raw += 1 # uncertainty bonus (due to imperfect analysis)
+    return min(max(raw, 0), 100)
+
+
+def game_accuracy_from_cps(move_analyse_list):
+    all_win_percents = [move.win_advantage for move in move_analyse_list]
+    window_size = min(max(len(move_analyse_list) // 10, 2), 8)
+    
+    sliding_windows = [
+        all_win_percents[i : i + window_size]
+        for i in range(len(all_win_percents) - window_size + 1)
+    ]
+
+    fill_count = min(window_size, len(all_win_percents)) - 2
+    initial_padding = all_win_percents[:window_size] * fill_count 
+
+    windows = initial_padding + sliding_windows
+
+    weights = [] 
+    for window in windows:
+        weight = 0.0
+        with suppress(statistics.StatisticsError, TypeError):
+            weight = statistics.stdev(window)
+        weights.append(min(max(weight, 0.5), 12))
+    
+    
+    weighted_accuracies = []
+    for index, ((prev_win, next_win), weight) in enumerate(zip(it.pairwise(all_win_percents), weights)):
+        is_white = index % 2 == 0 
+        first, second = (prev_win, next_win) if not is_white else (next_win, prev_win)
+        accuracy = accuracy_from_win_percents(first, second)
+        #print(f'if_white: {is_white} | first: {first} - second: {second} | accuracy: {accuracy}')
+        weighted_accuracies.append([(accuracy, weight), is_white])
+
+    #print(f'weights_size: {len(weights)}')
+    #print(f'sliding_size: {len(sliding_windows)}')
+    #print(f'initial_size: {len(initial_padding)}')
+    #print(f'windows_size: {len(windows)}')
+    #print(f'all_win_percents_size: {len(all_win_percents)}')
+    #print('='*40)
+    #print(weighted_accuracies)
+
+    white_weighted_accuracies = [acc[0][0] for acc in weighted_accuracies if acc[1]]
+    white_weights = [acc[0][1] for acc in weighted_accuracies if acc[1]]
+    black_weighted_accuracies = [acc[0][0] for acc in weighted_accuracies if not acc[1]]
+    black_weights = [acc[0][1] for acc in weighted_accuracies if not acc[1]]
+
+    white_weighted_mean = statistics.fmean(white_weighted_accuracies, white_weights)
+    white_harmonic_mean = statistics.harmonic_mean(white_weighted_accuracies) 
+
+    black_weighted_mean = statistics.fmean(black_weighted_accuracies, black_weights)
+    black_harmonic_mean = statistics.harmonic_mean(black_weighted_accuracies) 
+
+    white_accuracy = round((white_weighted_mean + white_harmonic_mean) / 2, 2)
+    black_accuracy = round((black_weighted_mean + black_harmonic_mean) / 2, 2)
+
+    return (white_accuracy, black_accuracy) 
+    
 
 def classify_move(is_white_move, index, move_analyse_list):
     """
@@ -61,8 +119,8 @@ def classify_move(is_white_move, index, move_analyse_list):
     current_win_adv = move_analyse.win_advantage
     previous_win_adv = previous_move_analyse.win_advantage 
     
-    previous_ep = previous_win_adv / DECIMAL_ONE_HUNDRED
-    current_ep = current_win_adv / DECIMAL_ONE_HUNDRED
+    previous_ep = previous_win_adv / 100
+    current_ep = current_win_adv / 100
     
     # Calculate expected points lost
     points_lost = Decimal(abs(current_ep - previous_ep)).quantize(Decimal('0.00'), rounding=ROUND_DOWN)
@@ -104,11 +162,8 @@ def classify_and_evaluate_moves(game_data, polyglot_book_path):
         is_white_turn = index % 2 == 0
         score = info[0]['score'].white()
 
-        win_adv = win_advantage(score)
-
-        move_analyse.win_advantage = Decimal(win_adv)
-        move_analyse.evaluation = score_to_evalbar_points(score, win_adv)
-
+        move_analyse.win_advantage = win_advantage(score)
+        move_analyse.evaluation = score_to_evalbar_points(score, move_analyse.win_advantage)
         board.push(chess.Move.from_uci(move_analyse.move))
 
         if book.get(board):
@@ -116,5 +171,11 @@ def classify_and_evaluate_moves(game_data, polyglot_book_path):
         elif index > 0:
             move_analyse.move_class = classify_move(is_white_turn, index, move_analyse_list)
 
+    white_acc, black_acc = game_accuracy_from_cps(move_analyse_list)
+    game_data = replace(game_data, 
+                        white_accuracy=white_acc, 
+                        black_accuracy=black_acc)
+
     game_data.move_analyse_list = move_analyse_list
-    return [game_data, move_analyse_list]
+    return game_data
+

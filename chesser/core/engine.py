@@ -15,6 +15,8 @@ class GameData:
     black_player: str 
     white_elo: int
     black_elo: int
+    white_accuracy: float
+    black_accuracy: float
     move_analyse_list: list = field(default_factory=list)
 
 
@@ -55,7 +57,8 @@ class Engine:
         board = game.board()
         
         game_data = GameData(game.headers['White'], game.headers['Black'], 
-                             game.headers['WhiteElo'], game.headers['BlackElo'])
+                             game.headers['WhiteElo'], game.headers['BlackElo'], 
+                             None, None)
        
         analyse_move_list = []
 

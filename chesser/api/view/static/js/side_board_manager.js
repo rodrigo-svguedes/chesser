@@ -5,6 +5,8 @@ const chessComTab = document.getElementById('importChessComTab')
 const importPGNBtn = document.getElementById('importPGNBtn')
 
 const review = document.getElementsByClassName('review')[0]
+const playerNames = document.querySelectorAll('.player-name > span')
+const playerAccuracies = document.querySelectorAll('.player-acc > span')
 
 importPGNTabBtn.addEventListener('click', () => {
     chessComTabBtn.classList.remove('active')
@@ -22,8 +24,8 @@ chessComTabBtn.addEventListener('click', () => {
     chessComTab.style.display = 'block'
 });
 
-export const handleReviewBar = (gameMoveAnalysis) => {
-    Object.entries(Object.values(gameMoveAnalysis)
+export const handleReviewBar = (gameData) => {
+    Object.entries(Object.values(gameData['move_analyse_list'])
             .map(data => data['move_class'])
             .reduce((acc, value, index) => {
                 const pieceTurn = index % 2 == 0? 'w' : 'b'
@@ -37,7 +39,14 @@ export const handleReviewBar = (gameMoveAnalysis) => {
                 else
                     e[1].innerText = value[1]
             });
+
     review.style.visibility = 'visible'
+
+    playerNames[0].innerText = gameData['white_player']
+    playerNames[1].innerText = gameData['black_player']
+
+    playerAccuracies[0].innerText = gameData['white_accuracy']
+    playerAccuracies[1].innerText = gameData['black_accuracy']
 }
 
 export const addPGNBtnListener = (func) => {
