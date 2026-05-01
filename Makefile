@@ -1,6 +1,7 @@
 
 test:
-	pytest tests -v --cov=chesser
+	. env/bin/activate && \
+	pytest -o "pythonpath=chesser" --log-cli-level=INFO
 
 create-env:
 	python3 -m venv env

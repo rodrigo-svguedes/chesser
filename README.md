@@ -18,6 +18,10 @@ A chess game analyzer based on stockfish's analysis.
 It is also possible to set your own polyglot book by setting the environment variable: POLYGLOT_BOOK_PATH.  
 By default, the polyglot book is the Performance.bin included on assets.
 
+## Testing
+
+- `make test`
+
 ## Running (development mode)
 
 - `make run`
