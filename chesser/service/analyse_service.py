@@ -1,6 +1,5 @@
-import os
 import math
-import statistics
+import statistics 
 import itertools as it
 
 from decimal import Decimal, ROUND_DOWN
@@ -8,13 +7,12 @@ from contextlib import suppress
 from dataclasses import replace
 
 import chess
-import chess.pgn
-import chess.engine
 import chess.polyglot
 
 
 MATE_THRESHOLD = 10
 CP_CEILING = 1000
+CP_INITIAL = 15
 
 
 def win_advantage(score):
@@ -55,15 +53,17 @@ def accuracy_from_win_percents(before, after):
 
 def game_accuracy_from_cps(move_analyse_list):
     all_win_percents = [move.win_advantage for move in move_analyse_list]
+    initial_score = chess.engine.PovScore(chess.engine.Cp(CP_INITIAL), chess.WHITE).white()
+    all_win_percents.insert(0, win_advantage(initial_score))
+
     window_size = min(max(len(move_analyse_list) // 10, 2), 8)
-    
     sliding_windows = [
         all_win_percents[i : i + window_size]
         for i in range(len(all_win_percents) - window_size + 1)
     ]
 
     fill_count = min(window_size, len(all_win_percents)) - 2
-    initial_padding = all_win_percents[:window_size] * fill_count 
+    initial_padding = [all_win_percents[:window_size]] * fill_count 
 
     windows = initial_padding + sliding_windows
 
@@ -74,11 +74,12 @@ def game_accuracy_from_cps(move_analyse_list):
             weight = statistics.stdev(window)
         weights.append(min(max(weight, 0.5), 12))
     
-    
+    assert len(weights) == len(list(it.pairwise(all_win_percents))) 
+
     weighted_accuracies = []
     for index, ((prev_win, next_win), weight) in enumerate(zip(it.pairwise(all_win_percents), weights)):
         is_white = index % 2 == 0 
-        first, second = (prev_win, next_win) if not is_white else (next_win, prev_win)
+        first, second = (prev_win, next_win) if is_white else (next_win, prev_win)
         accuracy = accuracy_from_win_percents(first, second)
         #print(f'if_white: {is_white} | first: {first} - second: {second} | accuracy: {accuracy}')
         weighted_accuracies.append([(accuracy, weight), is_white])
@@ -126,7 +127,6 @@ def classify_move(is_white_move, index, move_analyse_list):
     points_lost = Decimal(abs(current_ep - previous_ep)).quantize(Decimal('0.00'), rounding=ROUND_DOWN)
 
     #print(f'{analyse_data[previous_index+1]["move"]}: {current_ep}, {previous_ep} => points_lost: {points_lost}.')
-    #print('='*25)
     
     missed_class = ['inaccuracy', 'miss', 'mistake', 'blunder']
     if points_lost >= Decimal('0.05') \

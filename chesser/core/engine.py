@@ -40,7 +40,7 @@ class MoveAnalyse:
 
 class Engine:
 
-    THREADS_THRESHOLD = 5
+    THREADS_THRESHOLD = 1
     DEFAULT_DEPTH = 15
 
     def __init__(self, stockfish_path):
@@ -56,16 +56,14 @@ class Engine:
         game = chess.pgn.read_game(io.StringIO(pgn_code))
         board = game.board()
         
-        game_data = GameData(game.headers['White'], game.headers['Black'], 
-                             game.headers['WhiteElo'], game.headers['BlackElo'], 
+        game_data = GameData(game.headers.get('White'), game.headers.get('Black'), 
+                             game.headers.get('WhiteElo'), game.headers.get('BlackElo'), 
                              None, None)
        
         analyse_move_list = []
 
         is_promotion = lambda move: chess.piece_symbol(move.promotion) if move.promotion else None
-
         for index, move in enumerate(game.mainline_moves()):
-
             is_white_turn = index % 2 == 0
 
             piece_promotion = is_promotion(move)
@@ -83,7 +81,6 @@ class Engine:
 
             board.push(move)
             info = self.__engine.analyse(board, chess.engine.Limit(depth=depth), multipv=multipv)
-            
             move_analyse.fen = board.board_fen()
 
             if info[0].get('pv'):

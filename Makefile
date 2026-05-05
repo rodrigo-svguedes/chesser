@@ -1,8 +1,3 @@
-
-test:
-	. env/bin/activate && \
-	pytest -o "pythonpath=chesser" --log-cli-level=INFO
-
 create-env:
 	python3 -m venv env
 
@@ -32,6 +27,13 @@ clean:
 	rm -rf htmlcov
 	rm -rf .tox/
 	rm -rf docs/_build
+
+reset-cache:
+	rm -rf tests/data/pgn_data.pkl
+
+test:
+	. env/bin/activate && \
+	pytest -o "pythonpath=chesser" --log-cli-level=INFO
 
 run:
 	. env/bin/activate && \

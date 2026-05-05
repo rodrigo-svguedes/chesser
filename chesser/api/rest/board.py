@@ -1,4 +1,3 @@
-import os
 import datetime as dt
 
 from flask import Blueprint, make_response, jsonify, request, current_app
