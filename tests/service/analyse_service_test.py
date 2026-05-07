@@ -107,7 +107,7 @@ def test_classify_and_evaluate_moves(cached_engine_analyse):
         assert round(n.win_advantage, 2) == accuracies[(i*2)+1]
 
 
-@parametrize('index, white, black', [(0, 97, 94), (1, 93, 98), (2, 74, 75), (3, 82, 65), (4, 89, 84)])
+@parametrize('index, white, black', [(0, 97, 94), (1, 93, 98), (2, 74, 75), (3, 82, 65), (4, 89, 84), (5, 75, 88)])
 def test_game_accuracies(cached_engine_analyse, index, white, black):
     # checks some games accuracies at DEPTH 15
     game_data = classify_and_evaluate_moves(cached_engine_analyse[index], POLYGLOT_BOOK_PATH)
@@ -121,7 +121,7 @@ def test_game_accuracies(cached_engine_analyse, index, white, black):
     (0, {'book': (6, 8), 'good': (5, 4), 'best': (26, 25), 'excellent': (6, 3), 'inaccuracy': (1, 1), 'mistake': (0, 2)}),
     (1, {'book': (9, 9), 'good': (3, 3), 'best': (16, 23), 'excellent': (6, 5), 'inaccuracy': (6, 0)})
 ])
-def test_game_accuracies(cached_engine_analyse, index, expected_move_count):
+def test_game_classification(cached_engine_analyse, index, expected_move_count):
     # checks some games move classification counts 
     game_data = classify_and_evaluate_moves(cached_engine_analyse[index], POLYGLOT_BOOK_PATH)
 
@@ -133,5 +133,4 @@ def test_game_accuracies(cached_engine_analyse, index, expected_move_count):
         for move_class, value in move_class_count[key].items():
             logging.info(f'{key} -> {move_class}: {value}')
             assert value == expected_move_count[move_class][key]
-
 

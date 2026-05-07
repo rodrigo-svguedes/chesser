@@ -8,6 +8,7 @@ from dataclasses import replace
 
 import chess
 import chess.polyglot
+from chess.engine import Mate
 
 
 MATE_THRESHOLD = 10
@@ -21,10 +22,9 @@ def win_advantage(score):
         winning chance of a position based 
         on stockfish's centpawns score
     """
-    if score.is_mate():
-        return 100 if score.mate() >= 0 else 0
-    
-    win_adv = 2 / (1 + math.exp(-0.00368208 * score.score())) - 1
+    centipawns = Mate(score.mate()).score(mate_score=CP_CEILING) if score.is_mate() else score.score()
+
+    win_adv = 2 / (1 + math.exp(-0.00368208 * centipawns)) - 1
     win_adv = max(min(1, win_adv), -1)
 
     return 50 + 50 * max(min(win_adv, CP_CEILING), -CP_CEILING)
@@ -71,7 +71,7 @@ def game_accuracy_from_cps(move_analyse_list):
     for window in windows:
         weight = 0.0
         with suppress(statistics.StatisticsError, TypeError):
-            weight = statistics.stdev(window)
+            weight = statistics.pstdev(window)
         weights.append(min(max(weight, 0.5), 12))
     
     assert len(weights) == len(list(it.pairwise(all_win_percents))) 
@@ -84,17 +84,9 @@ def game_accuracy_from_cps(move_analyse_list):
         #print(f'if_white: {is_white} | first: {first} - second: {second} | accuracy: {accuracy}')
         weighted_accuracies.append([(accuracy, weight), is_white])
 
-    #print(f'weights_size: {len(weights)}')
-    #print(f'sliding_size: {len(sliding_windows)}')
-    #print(f'initial_size: {len(initial_padding)}')
-    #print(f'windows_size: {len(windows)}')
-    #print(f'all_win_percents_size: {len(all_win_percents)}')
-    #print('='*40)
-    #print(weighted_accuracies)
-
-    white_weighted_accuracies = [acc[0][0] for acc in weighted_accuracies if acc[1]]
+    white_weighted_accuracies = [max(acc[0][0], 1) for acc in weighted_accuracies if acc[1]]
     white_weights = [acc[0][1] for acc in weighted_accuracies if acc[1]]
-    black_weighted_accuracies = [acc[0][0] for acc in weighted_accuracies if not acc[1]]
+    black_weighted_accuracies = [max(acc[0][0], 1) for acc in weighted_accuracies if not acc[1]]
     black_weights = [acc[0][1] for acc in weighted_accuracies if not acc[1]]
 
     white_weighted_mean = statistics.fmean(white_weighted_accuracies, white_weights)

@@ -45,3 +45,16 @@
 
 1. d4 Nf6 2. c4 e6 3. Nc3 Bb4 4. e3 b6 5. Ne2 Ba6 6. a3 Be7 7. Nf4 d5 8. cxd5 Bxf1 9. Kxf1 exd5 10. g4! c6 11. g5 Nfd7 12. h4 Bd6 13. e4 dxe4 14. Nxe4 Bxf4 15. Bxf4 O-O 16. h5 Re8 17. Nd6 Re6 18. d5 Rxd6 19. Bxd6 Qxg5 20. Qf3 cxd5 21. Re1 Na6 22. Re7 Nf6 23. h6 Rc8 24. Bf4 Qf5 25. hxg7 Nc5 26. Re5 Qb1+ 27. Kg2 Qxb2 28. Rf5 Ne6 29. Be5 1-0
 
+[Event "Live Chess"]
+[Site "Chess.com"]
+[Date "2026.05.06"]
+[Round "?"]
+[White "white_player"]
+[Black "black_player"]
+[Result "0-1"]
+
+1. d4 e6 2. c3 d5 3. Bf4 c5 4. e3 Nf6 5. Bd3 Qb6 6. Qc2 cxd4 7. exd4 Nc6 8. Nf3
+Ne4 9. Bxe4 dxe4 10. Ne5 Nxe5 11. Bxe5 f6 12. Bg3 Be7 13. Nd2 f5 14. Nc4 Qb5 15.
+Nd6+ Bxd6 16. Bxd6 Kd7 17. Be5 b6 18. Rg1 Rg8 19. Qe2 Qxe2+ 20. Kxe2 Bb7 21.
+Rac1 Ba6+ 22. Kd2 Bd3 23. b3 g5 24. c4 f4 25. Rce1 h5 26. h3 g4 27. hxg4 hxg4
+28. g3 fxg3 29. fxg3 Raf8 30. Bf4 Rh8 31. Kc3 Rh2 32. Ra1 a5 33. Rgd1 Rc2# 0-1
